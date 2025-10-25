@@ -236,10 +236,14 @@ function AvailabilityGrid({
   campaign: Campaign;
   availabilities: AvailabilityRecord[];
 }) {
+  const [daysToShow, setDaysToShow] = useState(60); // Start with 60 days
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  
   const today = new Date();
-  const next30Days = eachDayOfInterval({
+  const futureDays = eachDayOfInterval({
     start: today,
-    end: addDays(today, 30),
+    end: addDays(today, daysToShow),
   }).filter((date) => {
     const dayName = format(date, 'EEEE');
     return campaign.availableDays.includes(dayName);
@@ -261,6 +265,28 @@ function AvailabilityGrid({
     return avail?.status || "Don't know";
   };
 
+  const getPlayersAvailableForDate = (date: Date) => {
+    const available = campaign.playerIds.filter(player => {
+      const status = getStatusForPlayerAndDate(player._id, date);
+      return status === 'Sure';
+    }).length;
+    const maybe = campaign.playerIds.filter(player => {
+      const status = getStatusForPlayerAndDate(player._id, date);
+      return status === 'Maybe';
+    }).length;
+    const notAvailable = campaign.playerIds.filter(player => {
+      const status = getStatusForPlayerAndDate(player._id, date);
+      return status === 'Not available';
+    }).length;
+    
+    return { available, maybe, notAvailable, total: campaign.playerIds.length };
+  };
+
+  const handleDateClick = (date: Date) => {
+    setSelectedDate(date);
+    setShowScheduleModal(true);
+  };
+
   const statusColors = {
     Sure: 'bg-green-200 text-green-800',
     Maybe: 'bg-yellow-200 text-yellow-800',
@@ -269,48 +295,229 @@ function AvailabilityGrid({
   };
 
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50">
-              Player
-            </th>
-            {next30Days.map((date) => (
-              <th
-                key={date.toISOString()}
-                className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                <div>{format(date, 'EEE')}</div>
-                <div>{format(date, 'M/d')}</div>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {campaign.playerIds.map((player) => (
-            <tr key={player._id}>
-              <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 bg-white">
-                {player.username}
-              </td>
-              {next30Days.map((date) => {
-                const status = getStatusForPlayerAndDate(player._id, date);
-                return (
-                  <td key={date.toISOString()} className="px-2 py-2">
-                    <div
-                      className={`text-xs px-2 py-1 rounded text-center ${
-                        statusColors[status as keyof typeof statusColors]
-                      }`}
+    <>
+      <div className="space-y-4">
+        {/* Controls */}
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-gray-600">
+            Showing next {futureDays.length} campaign days
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setDaysToShow(Math.max(30, daysToShow - 30))}
+              disabled={daysToShow <= 30}
+              className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Show Less
+            </button>
+            <button
+              onClick={() => setDaysToShow(daysToShow + 30)}
+              className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50"
+            >
+              Show More (+30 days)
+            </button>
+          </div>
+        </div>
+
+        {/* Scrollable Table */}
+        <div className="overflow-x-auto border rounded-lg">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10">
+                  Player
+                </th>
+                {futureDays.map((date) => {
+                  const stats = getPlayersAvailableForDate(date);
+                  return (
+                    <th
+                      key={date.toISOString()}
+                      onClick={() => handleDateClick(date)}
+                      className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-purple-50 transition"
+                      title={`Click to schedule session\n${stats.available} available, ${stats.maybe} maybe, ${stats.notAvailable} not available`}
                     >
-                      {status === 'Sure' ? '✓' : status === 'Maybe' ? '?' : status === 'Not available' ? '✗' : '−'}
-                    </div>
+                      <div>{format(date, 'EEE')}</div>
+                      <div className="font-bold">{format(date, 'M/d')}</div>
+                      <div className="text-[10px] text-green-600 font-semibold">
+                        {stats.available}/{stats.total} ✓
+                      </div>
+                    </th>
+                  );
+                })}
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {campaign.playerIds.map((player) => (
+                <tr key={player._id}>
+                  <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 bg-white z-10">
+                    {player.username}
                   </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                  {futureDays.map((date) => {
+                    const status = getStatusForPlayerAndDate(player._id, date);
+                    return (
+                      <td 
+                        key={date.toISOString()} 
+                        className="px-2 py-2 cursor-pointer hover:ring-2 hover:ring-purple-400 hover:ring-inset transition"
+                        onClick={() => handleDateClick(date)}
+                      >
+                        <div
+                          className={`text-xs px-2 py-1 rounded text-center ${
+                            statusColors[status as keyof typeof statusColors]
+                          }`}
+                        >
+                          {status === 'Sure' ? '✓' : status === 'Maybe' ? '?' : status === 'Not available' ? '✗' : '−'}
+                        </div>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="text-xs text-gray-500 bg-blue-50 border border-blue-200 rounded p-3">
+          💡 <strong>Tip:</strong> Click on any date column header or cell to schedule a session for that day.
+          The green numbers show how many players confirmed they&apos;re available.
+        </div>
+      </div>
+
+      {/* Quick Schedule Modal */}
+      {showScheduleModal && selectedDate && (
+        <QuickScheduleModal
+          campaign={campaign}
+          selectedDate={selectedDate}
+          onClose={() => {
+            setShowScheduleModal(false);
+            setSelectedDate(null);
+          }}
+          onSuccess={() => {
+            setShowScheduleModal(false);
+            setSelectedDate(null);
+            window.location.reload(); // Reload to show new session
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+function QuickScheduleModal({
+  campaign,
+  selectedDate,
+  onClose,
+  onSuccess,
+}: {
+  campaign: Campaign;
+  selectedDate: Date;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [time, setTime] = useState('19:00');
+  const [location, setLocation] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+
+    try {
+      const response = await fetch('/api/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          campaignId: campaign._id,
+          date: selectedDate.toISOString(),
+          time,
+          location,
+          confirmedPlayerIds: campaign.playerIds.map((p) => p._id),
+        }),
+      });
+
+      if (response.ok) {
+        onSuccess();
+      } else {
+        const data = await response.json();
+        alert(data.error || 'Failed to schedule session');
+      }
+    } catch (error) {
+      console.error('Error scheduling session:', error);
+      alert('Failed to schedule session');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg max-w-md w-full p-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Schedule Session</h2>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Date
+            </label>
+            <input
+              type="text"
+              value={format(selectedDate, 'EEEE, MMMM d, yyyy')}
+              disabled
+              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-700 font-semibold"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Time
+            </label>
+            <input
+              type="time"
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-600"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Location
+            </label>
+            <input
+              type="text"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="e.g., John's house, Roll20, Discord"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-600"
+              required
+            />
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+            <p className="text-sm text-blue-800">
+              All {campaign.playerIds.length} players will be added and receive email notifications.
+            </p>
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition"
+              disabled={submitting}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition disabled:opacity-50"
+              disabled={submitting}
+            >
+              {submitting ? 'Scheduling...' : 'Schedule Session'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
