@@ -51,32 +51,26 @@ export default function DashboardPage() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid md:grid-cols-3 gap-6 mb-8">
-          <Link
-            href="/dashboard/campaigns"
-            className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition group"
-          >
-            <Users className="w-12 h-12 text-purple-600 mb-4 group-hover:scale-110 transition" />
+          <div className="bg-white p-6 rounded-lg shadow">
+            <Users className="w-12 h-12 text-purple-600 mb-4" />
             <h2 className="text-xl font-semibold text-gray-900 mb-2">My Campaigns</h2>
             <p className="text-gray-600">View and manage your campaigns</p>
-          </Link>
+            <p className="text-sm text-gray-500 mt-2">(Coming soon)</p>
+          </div>
 
-          <Link
-            href="/dashboard/calendar"
-            className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition group"
-          >
-            <Calendar className="w-12 h-12 text-purple-600 mb-4 group-hover:scale-110 transition" />
+          <div className="bg-white p-6 rounded-lg shadow">
+            <Calendar className="w-12 h-12 text-purple-600 mb-4" />
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Calendar</h2>
             <p className="text-gray-600">Set your availability and view sessions</p>
-          </Link>
+            <p className="text-sm text-gray-500 mt-2">(Coming soon)</p>
+          </div>
 
-          <Link
-            href="/dashboard/sessions"
-            className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition group"
-          >
-            <Calendar className="w-12 h-12 text-purple-600 mb-4 group-hover:scale-110 transition" />
+          <div className="bg-white p-6 rounded-lg shadow">
+            <Calendar className="w-12 h-12 text-purple-600 mb-4" />
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Upcoming Sessions</h2>
             <p className="text-gray-600">View all scheduled sessions</p>
-          </Link>
+            <p className="text-sm text-gray-500 mt-2">(Coming soon)</p>
+          </div>
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
