@@ -138,7 +138,7 @@ function SessionCard({ session, isPast = false }: { session: Session; isPast?: b
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-gray-600">
               <Calendar className="w-4 h-4" />
-              <span>{format(sessionDate, 'EEEE, MMMM d, yyyy')}</span>
+              <span>{format(sessionDate, 'EEEE, dd/MM/yyyy')}</span>
             </div>
 
             <div className="flex items-center gap-2 text-gray-600">

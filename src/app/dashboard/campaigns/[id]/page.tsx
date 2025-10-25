@@ -234,7 +234,7 @@ export default function CampaignDetailPage() {
                             {session.name || 'Session'}
                           </p>
                           <p className="text-sm text-gray-700">
-                            {format(parseISO(session.date), 'MMM d, yyyy')}
+                            {format(parseISO(session.date), 'dd/MM/yyyy')}
                           </p>
                           <p className="text-sm text-gray-600">{session.time}</p>
                           <p className="text-sm text-gray-600">{session.location}</p>
@@ -607,7 +607,7 @@ function QuickScheduleModal({
             </label>
             <input
               type="text"
-              value={format(selectedDate, 'EEEE, MMMM d, yyyy')}
+              value={format(selectedDate, 'EEEE, dd/MM/yyyy')}
               disabled
               className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-700 font-semibold"
             />

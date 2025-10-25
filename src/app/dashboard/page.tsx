@@ -277,7 +277,7 @@ export default function DashboardPage() {
                           Campaign: {sessionObj.campaignId.name}
                         </p>
                         <div className="flex flex-wrap gap-4 text-sm text-gray-700">
-                          <span>📅 {format(parseISO(sessionObj.date), 'MMM d, yyyy')}</span>
+                          <span>📅 {format(parseISO(sessionObj.date), 'dd/MM/yyyy')}</span>
                           <span>🕐 {sessionObj.time}</span>
                           <span>📍 {sessionObj.location}</span>
                         </div>
