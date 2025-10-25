@@ -84,19 +84,19 @@ export async function createGoogleCalendarEvent(
 
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
-    // Use the date and time directly with the Prague timezone
-    // This tells Google Calendar: "This datetime is in Prague timezone"
+    // Don't use timeZone parameter - we're already sending the correct UTC datetime
+    // that represents the desired Prague local time
     const event = {
       summary,
       description,
       location,
       start: {
         dateTime: startDateTime.toISOString(),
-        timeZone: 'Europe/Prague', // Prague/Berlin timezone (CET/CEST)
+        // timeZone is NOT needed - our startDateTime is already the correct UTC moment
       },
       end: {
         dateTime: endDateTime.toISOString(),
-        timeZone: 'Europe/Prague',
+        // timeZone is NOT needed
       },
       attendees: attendees.map((email) => ({ email })),
       reminders: {
@@ -113,7 +113,6 @@ export async function createGoogleCalendarEvent(
       inputDate: date,
       calculatedStart: startDateTime.toISOString(),
       time,
-      timeZone: 'Europe/Prague',
       attendees,
     });
 
@@ -172,11 +171,11 @@ export async function updateGoogleCalendarEvent(
       location,
       start: {
         dateTime: startDateTime.toISOString(),
-        timeZone: 'Europe/Prague', // Prague/Berlin timezone (CET/CEST)
+        // timeZone is NOT needed - our startDateTime is already the correct UTC moment
       },
       end: {
         dateTime: endDateTime.toISOString(),
-        timeZone: 'Europe/Prague',
+        // timeZone is NOT needed
       },
       attendees: attendees.map((email) => ({ email })),
       reminders: {
