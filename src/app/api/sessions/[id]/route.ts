@@ -88,27 +88,34 @@ export async function PUT(
         if (parts.length === 3) {
           const [year, month, day] = parts.map(Number);
           
-          // Create UTC date at the input date
-          const utcDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+          // Calculate the UTC datetime that represents this date at midnight in Prague timezone
+          const utcMidnight = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
           
-          // Get Prague representation of this UTC date
+          // Format it in Prague timezone to see what date/time it shows
           const formatter = new Intl.DateTimeFormat('en-US', {
             timeZone: 'Europe/Prague',
             year: 'numeric',
             month: '2-digit',
             day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false,
           });
           
-          const pragueStr = formatter.format(utcDate);
-          const [pragueM, pragueD, pragueY] = pragueStr.split('/').map(Number);
+          const pragueTimeStr = formatter.format(utcMidnight);
+          const [datePart, timePart] = pragueTimeStr.split(', ');
+          const [pragueMonth, pragueDay, pragueYear] = datePart.split('/').map(Number);
+          const [pragueHour, pragueMin, pragueSec] = timePart.split(':').map(Number);
           
-          // Calculate how many hours we're off
-          // If Prague date is different from our target date, we need to adjust
-          const dayDiff = day - pragueD;
-          const hourOffset = dayDiff * 24;
+          const daysOff = day - pragueDay;
+          const hoursOff = 0 - pragueHour;
+          const minutesOff = 0 - pragueMin;
           
-          // Adjust: subtract hours to move back in UTC so that it becomes our target date in Prague
-          const pragueDate = new Date(utcDate.getTime() - hourOffset * 60 * 60 * 1000);
+          const pragueDate = new Date(utcMidnight);
+          pragueDate.setUTCDate(pragueDate.getUTCDate() + daysOff);
+          pragueDate.setUTCHours(pragueDate.getUTCHours() + hoursOff);
+          pragueDate.setUTCMinutes(pragueDate.getUTCMinutes() + minutesOff);
           
           if (!isNaN(pragueDate.getTime())) {
             sessionDoc.date = pragueDate;
