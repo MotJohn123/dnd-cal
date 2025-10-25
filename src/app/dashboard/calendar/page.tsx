@@ -15,11 +15,18 @@ interface Availability {
   status: AvailabilityStatus;
 }
 
+interface Campaign {
+  _id: string;
+  name: string;
+  availableDays: string[];
+}
+
 export default function CalendarPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [availability, setAvailability] = useState<Availability[]>([]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,24 +37,31 @@ export default function CalendarPage() {
 
   useEffect(() => {
     if (session) {
-      fetchAvailability();
+      fetchData();
     }
   }, [session, currentMonth]);
 
-  const fetchAvailability = async () => {
+  const fetchData = async () => {
     try {
       const start = startOfMonth(currentMonth);
       const end = endOfMonth(currentMonth);
 
-      const response = await fetch(
-        `/api/availability?startDate=${start.toISOString()}&endDate=${end.toISOString()}`
-      );
-      const data = await response.json();
-      if (response.ok) {
+      const [availRes, campaignsRes] = await Promise.all([
+        fetch(`/api/availability?startDate=${start.toISOString()}&endDate=${end.toISOString()}`),
+        fetch('/api/campaigns'),
+      ]);
+
+      if (availRes.ok) {
+        const data = await availRes.json();
         setAvailability(data.availability);
       }
+
+      if (campaignsRes.ok) {
+        const data = await campaignsRes.json();
+        setCampaigns(data.campaigns);
+      }
     } catch (error) {
-      console.error('Error fetching availability:', error);
+      console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
     }
@@ -65,11 +79,16 @@ export default function CalendarPage() {
       });
 
       if (response.ok) {
-        fetchAvailability();
+        fetchData();
       }
     } catch (error) {
       console.error('Error setting availability:', error);
     }
+  };
+
+  const getCampaignsForDay = (date: Date): Campaign[] => {
+    const dayName = format(date, 'EEEE');
+    return campaigns.filter((c) => c.availableDays.includes(dayName));
   };
 
   const getAvailabilityForDate = (date: Date): AvailabilityStatus => {
@@ -119,12 +138,19 @@ export default function CalendarPage() {
         {days.map((day) => {
           const status = getAvailabilityForDate(day);
           const isPast = day < new Date(new Date().setHours(0, 0, 0, 0));
+          const dayCampaigns = getCampaignsForDay(day);
+          const hasCampaigns = dayCampaigns.length > 0;
 
           return (
             <div key={day.toISOString()} className="aspect-square">
-              <div className="h-full flex flex-col p-1 border border-gray-200 rounded">
-                <div className="text-sm text-gray-600 text-center mb-1">
+              <div className={`h-full flex flex-col p-1 border-2 rounded ${hasCampaigns ? 'border-purple-400 bg-purple-50' : 'border-gray-200'}`}>
+                <div className="text-sm text-gray-600 text-center mb-1 flex items-center justify-center gap-1">
                   {format(day, 'd')}
+                  {hasCampaigns && (
+                    <span className="text-xs text-purple-600 font-bold" title={dayCampaigns.map(c => c.name).join(', ')}>
+                      ({dayCampaigns.length})
+                    </span>
+                  )}
                 </div>
                 {!isPast && (
                   <select
@@ -219,10 +245,16 @@ export default function CalendarPage() {
           {renderCalendar()}
 
           {/* Info */}
-          <div className="mt-6 pt-6 border-t">
+          <div className="mt-6 pt-6 border-t space-y-3">
+            <div className="flex items-start gap-2">
+              <div className="w-6 h-6 border-2 border-purple-400 bg-purple-50 rounded flex-shrink-0"></div>
+              <p className="text-sm text-gray-600">
+                <strong>Days with purple border</strong> indicate campaign days. The number shows how many campaigns have sessions on that day of the week.
+              </p>
+            </div>
             <p className="text-sm text-gray-600">
               💡 <strong>Tip:</strong> Your availability is shared across all campaigns. When you set your availability here,
-              all DMs in your campaigns can see it.
+              all DMs in your campaigns can see it. Focus on setting availability for highlighted campaign days!
             </p>
           </div>
         </div>

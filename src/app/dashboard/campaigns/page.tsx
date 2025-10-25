@@ -99,9 +99,10 @@ export default function CampaignsPage() {
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {campaigns.map((campaign) => (
-              <div
+              <Link
                 key={campaign._id}
-                className="bg-white rounded-lg shadow hover:shadow-lg transition p-6"
+                href={`/dashboard/campaigns/${campaign._id}`}
+                className="bg-white rounded-lg shadow hover:shadow-lg transition p-6 block"
               >
                 <div className="flex items-start justify-between mb-4">
                   <h3 className="text-xl font-semibold text-gray-900">{campaign.name}</h3>
@@ -134,14 +135,7 @@ export default function CampaignsPage() {
                     DM: {campaign.dmId.username}
                   </p>
                 </div>
-
-                <Link
-                  href={`/dashboard/campaigns/${campaign._id}`}
-                  className="mt-4 block text-center bg-gray-100 hover:bg-gray-200 text-gray-900 px-4 py-2 rounded-md transition"
-                >
-                  View Details
-                </Link>
-              </div>
+              </Link>
             ))}
           </div>
         )}
