@@ -1,10 +1,31 @@
 import { google } from 'googleapis';
 
-const oauth2Client = new google.auth.OAuth2(
-  process.env.GOOGLE_CLIENT_ID,
-  process.env.GOOGLE_CLIENT_SECRET,
-  process.env.GOOGLE_REDIRECT_URI
-);
+// For service account authentication (recommended for server-side)
+let oauth2Client: any = null;
+
+try {
+  if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && process.env.GOOGLE_PRIVATE_KEY) {
+    // Use service account
+    oauth2Client = new google.auth.JWT(
+      process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      undefined,
+      process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      ['https://www.googleapis.com/auth/calendar']
+    );
+  } else if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_REFRESH_TOKEN) {
+    // Use OAuth with refresh token
+    oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      process.env.GOOGLE_REDIRECT_URI
+    );
+    oauth2Client.setCredentials({
+      refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
+    });
+  }
+} catch (error) {
+  console.error('Failed to initialize Google OAuth client:', error);
+}
 
 interface CalendarEventParams {
   summary: string;
@@ -19,11 +40,9 @@ export async function createGoogleCalendarEvent(
   params: CalendarEventParams
 ): Promise<string | null> {
   try {
-    // Note: In a production app, you would store OAuth tokens for each user
-    // This is a simplified version that assumes the app has access to create events
-    
-    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
-      console.warn('Google Calendar API not configured');
+    // Check if Google Calendar is configured
+    if (!oauth2Client) {
+      console.warn('Google Calendar API not configured. Set GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_PRIVATE_KEY, or GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and GOOGLE_REFRESH_TOKEN');
       return null;
     }
 
@@ -62,22 +81,26 @@ export async function createGoogleCalendarEvent(
       },
     };
 
+    console.log('Creating Google Calendar event:', { summary, date: startDateTime, attendees });
+
     const response = await calendar.events.insert({
       calendarId: 'primary',
       requestBody: event,
-      sendUpdates: 'all',
+      sendUpdates: 'all', // Send email invitations to all attendees
     });
 
+    console.log('Google Calendar event created successfully:', response.data.id);
     return response.data.id || null;
-  } catch (error) {
-    console.error('Failed to create Google Calendar event:', error);
+  } catch (error: any) {
+    console.error('Failed to create Google Calendar event:', error.message);
+    console.error('Error details:', error);
     return null;
   }
 }
 
 export async function deleteGoogleCalendarEvent(eventId: string): Promise<void> {
   try {
-    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+    if (!oauth2Client) {
       return;
     }
 
@@ -88,7 +111,9 @@ export async function deleteGoogleCalendarEvent(eventId: string): Promise<void> 
       eventId,
       sendUpdates: 'all',
     });
-  } catch (error) {
-    console.error('Failed to delete Google Calendar event:', error);
+    
+    console.log('Google Calendar event deleted successfully:', eventId);
+  } catch (error: any) {
+    console.error('Failed to delete Google Calendar event:', error.message);
   }
 }
