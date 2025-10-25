@@ -1,0 +1,155 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import dbConnect from '@/lib/mongodb';
+import Session from '@/models/Session';
+import Campaign from '@/models/Campaign';
+import Availability from '@/models/Availability';
+import User from '@/models/User';
+import { sendSessionInvite } from '@/lib/email';
+import { createGoogleCalendarEvent } from '@/lib/google-calendar';
+
+// GET /api/sessions - Get sessions for campaigns the user is part of
+export async function GET(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    await dbConnect();
+
+    // Find campaigns where user is DM or player
+    const campaigns = await Campaign.find({
+      $or: [
+        { dmId: session.user.id },
+        { playerIds: session.user.id },
+      ],
+    });
+
+    const campaignIds = campaigns.map((c) => c._id);
+
+    const sessions = await Session.find({ campaignId: { $in: campaignIds } })
+      .populate('campaignId', 'name dmId')
+      .populate('confirmedPlayerIds', 'username email')
+      .sort({ date: 1 });
+
+    return NextResponse.json({ sessions }, { status: 200 });
+  } catch (error: any) {
+    console.error('Get sessions error:', error);
+    return NextResponse.json(
+      { error: error.message || 'Failed to fetch sessions' },
+      { status: 500 }
+    );
+  }
+}
+
+// POST /api/sessions - Create a new session
+export async function POST(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { campaignId, date, time, location } = await req.json();
+
+    if (!campaignId || !date || !time || !location) {
+      return NextResponse.json(
+        { error: 'Campaign ID, date, time, and location are required' },
+        { status: 400 }
+      );
+    }
+
+    await dbConnect();
+
+    const campaign = await Campaign.findById(campaignId).populate('playerIds', 'username email');
+
+    if (!campaign) {
+      return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
+    }
+
+    // Only DM can create sessions
+    if (campaign.dmId.toString() !== session.user.id) {
+      return NextResponse.json(
+        { error: 'Only the DM can create sessions' },
+        { status: 403 }
+      );
+    }
+
+    // Create session
+    const newSession = await Session.create({
+      campaignId,
+      date: new Date(date),
+      time,
+      location,
+      confirmedPlayerIds: campaign.playerIds.map((p: any) => p._id),
+    });
+
+    // Update all players' availability to "Not available" for this date
+    const sessionDate = new Date(date);
+    sessionDate.setHours(0, 0, 0, 0);
+
+    for (const player of campaign.playerIds) {
+      await Availability.findOneAndUpdate(
+        { userId: player._id, date: sessionDate },
+        { status: 'Not available' },
+        { upsert: true }
+      );
+    }
+
+    // Create Google Calendar event (if configured)
+    try {
+      const dm = await User.findById(campaign.dmId);
+      const eventId = await createGoogleCalendarEvent({
+        summary: `${campaign.name} - TTRPG Session`,
+        description: `Campaign: ${campaign.name}\nLocation: ${location}`,
+        location,
+        date: sessionDate,
+        time,
+        attendees: campaign.playerIds.map((p: any) => p.email),
+      });
+
+      if (eventId) {
+        newSession.googleEventId = eventId;
+        await newSession.save();
+      }
+    } catch (googleError) {
+      console.error('Google Calendar error:', googleError);
+      // Continue even if Google Calendar fails
+    }
+
+    // Send email invitations
+    try {
+      for (const player of campaign.playerIds) {
+        await sendSessionInvite({
+          to: player.email,
+          playerName: player.username,
+          campaignName: campaign.name,
+          date: sessionDate,
+          time,
+          location,
+        });
+      }
+    } catch (emailError) {
+      console.error('Email error:', emailError);
+      // Continue even if email fails
+    }
+
+    await newSession.populate('campaignId', 'name dmId');
+    await newSession.populate('confirmedPlayerIds', 'username email');
+
+    return NextResponse.json(
+      { message: 'Session created successfully', session: newSession },
+      { status: 201 }
+    );
+  } catch (error: any) {
+    console.error('Create session error:', error);
+    return NextResponse.json(
+      { error: error.message || 'Failed to create session' },
+      { status: 500 }
+    );
+  }
+}

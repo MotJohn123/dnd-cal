@@ -1,0 +1,37 @@
+{
+  "name": "dnd-cal",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "15.0.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "next-auth": "^4.24.8",
+    "mongoose": "^8.7.2",
+    "bcryptjs": "^2.4.3",
+    "googleapis": "^144.0.0",
+    "nodemailer": "^6.9.15",
+    "date-fns": "^4.1.0",
+    "zod": "^3.23.8",
+    "react-calendar": "^5.0.0",
+    "lucide-react": "^0.454.0"
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/nodemailer": "^6.4.16",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "eslint": "^8",
+    "eslint-config-next": "15.0.2"
+  }
+}
