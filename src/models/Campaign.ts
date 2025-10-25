@@ -6,6 +6,7 @@ export interface ICampaign extends Document {
   playerIds: mongoose.Types.ObjectId[];
   availableDays: ('Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday')[];
   description?: string;
+  emoji?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -38,6 +39,11 @@ const CampaignSchema = new Schema<ICampaign>(
     description: {
       type: String,
       maxlength: [500, 'Description cannot exceed 500 characters'],
+    },
+    emoji: {
+      type: String,
+      default: '🎲',
+      maxlength: [2, 'Emoji must be a single character'],
     },
   },
   {

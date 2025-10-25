@@ -15,6 +15,7 @@ interface Campaign {
   dmId: { _id: string; username: string };
   playerIds: { _id: string; username: string; email: string }[];
   availableDays: string[];
+  emoji?: string;
 }
 
 interface Session {
@@ -42,11 +43,16 @@ export function EditCampaignModal({
     campaign.playerIds.map((p) => p._id)
   );
   const [availableDays, setAvailableDays] = useState<string[]>(campaign.availableDays);
+  const [emoji, setEmoji] = useState(campaign.emoji || '🎲');
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  
+  // Common emojis for campaigns
+  const emojiOptions = ['🎲', '⚔️', '🗡️', '🛡️', '🐉', '👑', '🏰', '🔮', '📜', '🧙', '🗺️', '⛰️', '🌲', '🏞️', '🌙', '⭐', '💎', '🏅'];
+
 
   useEffect(() => {
     fetchAllUsers();
@@ -96,7 +102,8 @@ export function EditCampaignModal({
           name, 
           description,
           playerIds: selectedPlayers,
-          availableDays: availableDays
+          availableDays: availableDays,
+          emoji: emoji
         }),
       });
 
@@ -177,6 +184,29 @@ export function EditCampaignModal({
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-600"
               maxLength={500}
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Campaign Emoji
+            </label>
+            <div className="flex flex-wrap gap-2 p-3 border border-gray-300 rounded-md bg-gray-50">
+              {emojiOptions.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => setEmoji(option)}
+                  className={`text-2xl p-2 rounded transition ${
+                    emoji === option 
+                      ? 'bg-purple-200 border-2 border-purple-600' 
+                      : 'hover:bg-gray-200'
+                  }`}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-gray-600 mt-2">Selected: {emoji}</p>
           </div>
 
           <div>

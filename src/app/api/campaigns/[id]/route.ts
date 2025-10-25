@@ -83,6 +83,7 @@ export async function PATCH(
     if (updates.description !== undefined) campaign.description = updates.description;
     if (updates.playerIds) campaign.playerIds = updates.playerIds;
     if (updates.availableDays) campaign.availableDays = updates.availableDays;
+    if (updates.emoji !== undefined) campaign.emoji = updates.emoji;
 
     await campaign.save();
     await campaign.populate('dmId', 'username email');

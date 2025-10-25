@@ -10,7 +10,7 @@ import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, isSameDa
 
 interface Session {
   _id: string;
-  campaignId: { _id: string; name: string };
+  campaignId: { _id: string; name: string; emoji?: string };
   name?: string;
   date: string;
   time: string;
@@ -218,8 +218,26 @@ export default function DashboardPage() {
                           {format(day, 'd')}
                         </div>
                         {hasSession && (
-                          <div className="text-xs text-purple-600 font-bold mt-1">
-                            🎲 {daySessions.length}
+                          <div className="flex flex-col gap-1 mt-1">
+                            {daySessions.slice(0, 2).map((sess, idx) => {
+                              const emoji = sess.campaignId.emoji || '🎲';
+                              const initials = sess.campaignId.name
+                                .split(' ')
+                                .map(word => word[0])
+                                .join('')
+                                .toUpperCase()
+                                .slice(0, 2);
+                              return (
+                                <div key={idx} className="text-xs font-semibold text-purple-700 truncate">
+                                  {emoji} {initials}
+                                </div>
+                              );
+                            })}
+                            {daySessions.length > 2 && (
+                              <div className="text-xs font-semibold text-purple-600">
+                                +{daySessions.length - 2} more
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>

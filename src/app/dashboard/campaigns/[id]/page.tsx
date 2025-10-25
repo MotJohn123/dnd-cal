@@ -216,11 +216,11 @@ export default function CampaignDetailPage() {
             {/* Upcoming Sessions */}
             <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Upcoming Sessions</h2>
-              {sessions.length === 0 ? (
+              {sessions.filter(s => s.campaignId === campaign._id).length === 0 ? (
                 <p className="text-gray-600 text-sm">No sessions scheduled yet</p>
               ) : (
                 <div className="space-y-3">
-                  {sessions.map((session) => (
+                  {sessions.filter(s => s.campaignId === campaign._id).map((session) => (
                     <div key={session._id} className="border-l-4 border-purple-600 pl-3 pb-3">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
