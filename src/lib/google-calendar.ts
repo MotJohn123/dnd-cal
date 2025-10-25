@@ -98,6 +98,67 @@ export async function createGoogleCalendarEvent(
   }
 }
 
+export async function updateGoogleCalendarEvent(
+  eventId: string,
+  params: CalendarEventParams
+): Promise<void> {
+  try {
+    if (!oauth2Client) {
+      console.warn('Google Calendar API not configured');
+      return;
+    }
+
+    const { summary, description, location, date, time, attendees } = params;
+
+    // Parse time (format: HH:MM)
+    const [hours, minutes] = time.split(':').map(Number);
+    const startDateTime = new Date(date);
+    startDateTime.setHours(hours, minutes, 0, 0);
+
+    // Assume 3-hour session duration
+    const endDateTime = new Date(startDateTime);
+    endDateTime.setHours(startDateTime.getHours() + 3);
+
+    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+
+    const event = {
+      summary,
+      description,
+      location,
+      start: {
+        dateTime: startDateTime.toISOString(),
+        timeZone: 'UTC',
+      },
+      end: {
+        dateTime: endDateTime.toISOString(),
+        timeZone: 'UTC',
+      },
+      attendees: attendees.map((email) => ({ email })),
+      reminders: {
+        useDefault: false,
+        overrides: [
+          { method: 'email', minutes: 24 * 60 },
+          { method: 'popup', minutes: 60 },
+        ],
+      },
+    };
+
+    console.log('Updating Google Calendar event:', { eventId, summary, date: startDateTime });
+
+    await calendar.events.update({
+      calendarId: 'primary',
+      eventId,
+      requestBody: event,
+      sendUpdates: 'all', // Send email updates to all attendees
+    });
+
+    console.log('Google Calendar event updated successfully:', eventId);
+  } catch (error: any) {
+    console.error('Failed to update Google Calendar event:', error.message);
+    console.error('Error details:', error);
+  }
+}
+
 export async function deleteGoogleCalendarEvent(eventId: string): Promise<void> {
   try {
     if (!oauth2Client) {

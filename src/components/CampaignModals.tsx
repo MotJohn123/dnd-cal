@@ -1,6 +1,12 @@
-import { useState } from 'react';
-import { X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, UserPlus, UserMinus } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
+
+interface User {
+  _id: string;
+  username: string;
+  email: string;
+}
 
 interface Campaign {
   _id: string;
@@ -32,7 +38,40 @@ export function EditCampaignModal({
 }) {
   const [name, setName] = useState(campaign.name);
   const [description, setDescription] = useState(campaign.description || '');
+  const [selectedPlayers, setSelectedPlayers] = useState<string[]>(
+    campaign.playerIds.map((p) => p._id)
+  );
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    fetchAllUsers();
+  }, []);
+
+  const fetchAllUsers = async () => {
+    try {
+      const response = await fetch('/api/users');
+      if (response.ok) {
+        const data = await response.json();
+        // Filter out the DM from the list
+        const users = data.users.filter((u: User) => u._id !== campaign.dmId._id);
+        setAllUsers(users);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const togglePlayer = (playerId: string) => {
+    setSelectedPlayers((prev) =>
+      prev.includes(playerId)
+        ? prev.filter((id) => id !== playerId)
+        : [...prev, playerId]
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +81,11 @@ export function EditCampaignModal({
       const response = await fetch(`/api/campaigns/${campaign._id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, description }),
+        body: JSON.stringify({ 
+          name, 
+          description,
+          playerIds: selectedPlayers 
+        }),
       });
 
       if (response.ok) {
@@ -96,6 +139,54 @@ export function EditCampaignModal({
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-600"
               maxLength={500}
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Players
+            </label>
+            {loading ? (
+              <div className="text-sm text-gray-600">Loading players...</div>
+            ) : (
+              <div className="border border-gray-300 rounded-md max-h-48 overflow-y-auto">
+                {allUsers.length === 0 ? (
+                  <div className="p-3 text-sm text-gray-600">No other users available</div>
+                ) : (
+                  <div className="divide-y divide-gray-200">
+                    {allUsers.map((user) => {
+                      const isSelected = selectedPlayers.includes(user._id);
+                      return (
+                        <label
+                          key={user._id}
+                          className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => togglePlayer(user._id)}
+                            className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                          />
+                          <div className="flex-1">
+                            <div className="text-sm font-medium text-gray-900">
+                              {user.username}
+                            </div>
+                            <div className="text-xs text-gray-500">{user.email}</div>
+                          </div>
+                          {isSelected ? (
+                            <UserMinus className="w-4 h-4 text-red-500" />
+                          ) : (
+                            <UserPlus className="w-4 h-4 text-green-500" />
+                          )}
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+            <div className="mt-2 text-xs text-gray-600">
+              {selectedPlayers.length} player{selectedPlayers.length !== 1 ? 's' : ''} selected
+            </div>
           </div>
 
           <div className="flex gap-3 pt-4">
