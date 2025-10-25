@@ -41,9 +41,12 @@ export function EditCampaignModal({
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>(
     campaign.playerIds.map((p) => p._id)
   );
+  const [availableDays, setAvailableDays] = useState<string[]>(campaign.availableDays);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+
+  const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
   useEffect(() => {
     fetchAllUsers();
@@ -73,6 +76,14 @@ export function EditCampaignModal({
     );
   };
 
+  const toggleDay = (day: string) => {
+    setAvailableDays((prev) =>
+      prev.includes(day)
+        ? prev.filter((d) => d !== day)
+        : [...prev, day]
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
@@ -84,7 +95,8 @@ export function EditCampaignModal({
         body: JSON.stringify({ 
           name, 
           description,
-          playerIds: selectedPlayers 
+          playerIds: selectedPlayers,
+          availableDays: availableDays
         }),
       });
 
@@ -186,6 +198,40 @@ export function EditCampaignModal({
             )}
             <div className="mt-2 text-xs text-gray-600">
               {selectedPlayers.length} player{selectedPlayers.length !== 1 ? 's' : ''} selected
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Available Days
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {daysOfWeek.map((day) => {
+                const isSelected = availableDays.includes(day);
+                return (
+                  <label
+                    key={day}
+                    className={`
+                      flex items-center gap-2 p-3 border rounded-md cursor-pointer transition
+                      ${isSelected 
+                        ? 'bg-purple-50 border-purple-300 text-purple-700' 
+                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                      }
+                    `}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggleDay(day)}
+                      className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                    />
+                    <span className="text-sm font-medium">{day}</span>
+                  </label>
+                );
+              })}
+            </div>
+            <div className="mt-2 text-xs text-gray-600">
+              {availableDays.length} day{availableDays.length !== 1 ? 's' : ''} selected
             </div>
           </div>
 
