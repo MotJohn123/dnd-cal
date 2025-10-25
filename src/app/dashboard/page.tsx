@@ -89,7 +89,7 @@ export default function DashboardPage() {
               </div>
               <div>
                 <h3 className="font-semibold text-gray-900">Set Your Availability</h3>
-                <p className="text-gray-600">Go to your calendar and mark which days you're available to play.</p>
+                <p className="text-gray-600">Go to your calendar and mark which days you&apos;re available to play.</p>
               </div>
             </div>
 
@@ -109,7 +109,7 @@ export default function DashboardPage() {
               </div>
               <div>
                 <h3 className="font-semibold text-gray-900">Schedule Sessions</h3>
-                <p className="text-gray-600">DMs can view everyone's availability and schedule sessions. Players receive automatic invites!</p>
+                <p className="text-gray-600">DMs can view everyone&apos;s availability and schedule sessions. Players receive automatic invites!</p>
               </div>
             </div>
           </div>
