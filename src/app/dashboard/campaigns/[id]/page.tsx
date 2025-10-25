@@ -452,7 +452,7 @@ function AvailabilityGrid({
                       }
                     >
                       <div>{format(date, 'EEE')}</div>
-                      <div className="font-bold">{format(date, 'M/d')}</div>
+                      <div className="font-bold">{format(date, 'dd/MM')}</div>
                       {isLocked ? (
                         <div className="text-[10px] text-purple-800 font-bold">
                           🎲 {session.time}
