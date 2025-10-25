@@ -187,13 +187,14 @@ export async function POST(req: NextRequest) {
     });
 
     // Update all players' AND DM's availability to "Not available" for this date
-    const sessionDate = new Date(pragueDate);
-    sessionDate.setHours(0, 0, 0, 0);
+    // Create a separate date for availability tracking (midnight in the user's view)
+    const availabilityDate = new Date(pragueDate);
+    availabilityDate.setUTCHours(0, 0, 0, 0);
 
     // Mark all players as not available for ALL their campaigns on this date
     for (const player of players) {
       await Availability.findOneAndUpdate(
-        { userId: player._id, date: sessionDate },
+        { userId: player._id, date: availabilityDate },
         { status: 'Not available' },
         { upsert: true }
       );
@@ -201,7 +202,7 @@ export async function POST(req: NextRequest) {
 
     // Also mark DM as not available for all their campaigns on this date
     await Availability.findOneAndUpdate(
-      { userId: campaign.dmId, date: sessionDate },
+      { userId: campaign.dmId, date: availabilityDate },
       { status: 'Not available' },
       { upsert: true }
     );
@@ -226,7 +227,7 @@ export async function POST(req: NextRequest) {
         summary: eventTitle,
         description: `Campaign: ${campaign.name}\nLocation: ${location}`,
         location,
-        date: sessionDate,
+        date: pragueDate,
         time,
         attendees: allAttendees,
       });
@@ -247,7 +248,7 @@ export async function POST(req: NextRequest) {
           to: player.email,
           playerName: player.username,
           campaignName: campaign.name,
-          date: sessionDate,
+          date: availabilityDate,
           time,
           location,
         });

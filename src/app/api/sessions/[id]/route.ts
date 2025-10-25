@@ -243,12 +243,12 @@ export async function DELETE(
     }
 
     // Remove "Not available" availability for this date
-    const sessionDate = new Date(sessionDoc.date);
-    sessionDate.setHours(0, 0, 0, 0);
+    const availabilityDate = new Date(sessionDoc.date);
+    availabilityDate.setUTCHours(0, 0, 0, 0);
 
     await Availability.deleteMany({
       userId: { $in: [...campaign.playerIds.map((p: any) => p._id), campaign.dmId] },
-      date: sessionDate,
+      date: availabilityDate,
       status: 'Not available',
     });
 
