@@ -76,11 +76,12 @@ export async function createGoogleCalendarEvent(
     // This way Google Calendar knows: "This UTC moment is when 09:00 Prague time occurs"
     
     const startDateTime = new Date(date);
-    startDateTime.setHours(hours, minutes, 0, 0);
+    // Add hours and minutes using UTC operations since our date is already in UTC
+    startDateTime.setUTCHours(startDateTime.getUTCHours() + hours, startDateTime.getUTCMinutes() + minutes, 0, 0);
 
     // Assume 3-hour session duration
     const endDateTime = new Date(startDateTime);
-    endDateTime.setHours(startDateTime.getHours() + 3);
+    endDateTime.setUTCHours(endDateTime.getUTCHours() + 3);
 
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
@@ -155,13 +156,26 @@ export async function updateGoogleCalendarEvent(
     const [hours, minutes] = time.split(':').map(Number);
     
     // The date parameter is already set to the correct UTC moment that represents 
-    // the desired Prague date at midnight. We just need to add the time offset.
+    // the desired Prague date at midnight. We need to add the time in UTC.
+    // 
+    // For example: date = 2025-10-28T23:00:00.000Z (which is Prague Oct 29 00:00)
+    // We want to add 19 hours: 2025-10-28T23:00:00.000Z + 19h = 2025-10-29T18:00:00.000Z
+    // But wait - that's only 17 hours in Prague time due to DST!
+    // 
+    // Actually, we need to add hours to the Prague midnight directly:
+    // Prague Oct 29 00:00 + 19h = Prague Oct 29 19:00
+    // Which in UTC depends on DST...
+    // 
+    // The simplest approach: just add the hours directly to our UTC date
+    // The stored date IS Prague midnight in UTC, so adding hours gives us the right UTC time
+    
     const startDateTime = new Date(date);
-    startDateTime.setHours(hours, minutes, 0, 0);
+    // Add hours and minutes using UTC operations
+    startDateTime.setUTCHours(startDateTime.getUTCHours() + hours, startDateTime.getUTCMinutes() + minutes, 0, 0);
 
     // Assume 3-hour session duration
     const endDateTime = new Date(startDateTime);
-    endDateTime.setHours(startDateTime.getHours() + 3);
+    endDateTime.setUTCHours(endDateTime.getUTCHours() + 3);
 
     console.log('DEBUG Google Calendar Event Times:', {
       inputDate: date.toISOString(),

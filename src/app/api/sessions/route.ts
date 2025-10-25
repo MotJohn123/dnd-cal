@@ -125,11 +125,19 @@ export async function POST(req: NextRequest) {
       
       // We want: year-month-day at 00:00 Prague time
       // Currently UTC midnight shows as: pragueMonth/pragueDay/pragueYear pragueHour:pragueMin
-      // We need to shift backwards to get the correct UTC time
+      // If pragueHour > 0, we went forward, so we need to go back in UTC
+      // If pragueHour < 0 (impossible) or if pragueDay != day, we need to adjust
+      
+      // The key insight: if UTC midnight shows as 01:00 in Prague,
+      // then Prague midnight is 1 hour earlier in UTC
+      // So we need to SUBTRACT 1 hour from the UTC time
       
       const daysOff = day - pragueDay;
-      const hoursOff = 0 - pragueHour;
+      const hoursOff = 0 - pragueHour;  // If Prague shows 01:00, we need -1 to get back to 00:00
       const minutesOff = 0 - pragueMin;
+      
+      // If we went to the next day (pragueDay > day), we're also off by a day
+      // This happens when the offset puts us past midnight
       
       pragueDate = new Date(utcMidnight);
       pragueDate.setUTCDate(pragueDate.getUTCDate() + daysOff);
@@ -143,7 +151,17 @@ export async function POST(req: NextRequest) {
         pragueTimeStr,
         pragueDateTime: { pragueMonth, pragueDay, pragueYear, pragueHour, pragueMin },
         offsets: { daysOff, hoursOff, minutesOff },
+        beforeAdjustment: utcMidnight.toISOString(),
         calculatedPragueDate: pragueDate.toISOString(),
+        verifyInPrague: new Intl.DateTimeFormat('en-US', {
+          timeZone: 'Europe/Prague',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+        }).format(pragueDate),
       });
       
       if (isNaN(pragueDate.getTime())) {
