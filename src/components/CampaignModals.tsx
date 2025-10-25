@@ -115,6 +115,32 @@ export function EditCampaignModal({
     }
   };
 
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    const confirm = window.confirm('Are you sure you want to delete this campaign? This will remove all sessions and notify players. This action cannot be undone.');
+    if (!confirm) return;
+    setDeleting(true);
+    try {
+      const response = await fetch(`/api/campaigns/${campaign._id}`, {
+        method: 'DELETE',
+      });
+      if (response.ok) {
+        alert('Campaign deleted. Players have been notified and sessions removed.');
+        onSuccess();
+        onClose();
+      } else {
+        const data = await response.json();
+        alert(data.error || 'Failed to delete campaign');
+      }
+    } catch (error) {
+      console.error('Error deleting campaign:', error);
+      alert('Failed to delete campaign');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg max-w-md w-full p-6">
@@ -239,15 +265,25 @@ export function EditCampaignModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition"
-              disabled={submitting}
+              className="px-3 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition"
+              disabled={submitting || deleting}
             >
               Cancel
             </button>
+
+            <button
+              type="button"
+              onClick={handleDelete}
+              className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition disabled:opacity-50"
+              disabled={deleting || submitting}
+            >
+              {deleting ? 'Deleting...' : 'Delete Campaign'}
+            </button>
+
             <button
               type="submit"
-              className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition disabled:opacity-50"
-              disabled={submitting}
+              className="ml-auto px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition disabled:opacity-50"
+              disabled={submitting || deleting}
             >
               {submitting ? 'Saving...' : 'Save Changes'}
             </button>

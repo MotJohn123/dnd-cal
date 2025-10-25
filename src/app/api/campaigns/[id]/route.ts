@@ -3,6 +3,10 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import Campaign from '@/models/Campaign';
+import Session from '@/models/Session';
+import User from '@/models/User';
+import { deleteGoogleCalendarEvent } from '@/lib/google-calendar';
+import { sendSessionCancellation } from '@/lib/email';
 
 // GET /api/campaigns/[id] - Get a specific campaign
 export async function GET(
@@ -123,10 +127,54 @@ export async function DELETE(
       return NextResponse.json({ error: 'Only the DM can delete this campaign' }, { status: 403 });
     }
 
+    // Populate players so we can notify them
+    await campaign.populate('playerIds', 'username email');
+
+    // Find sessions belonging to this campaign
+    const sessions = await Session.find({ campaignId: campaign._id });
+
+    // For each session: delete Google event (if present) and notify players
+    for (const sess of sessions) {
+      try {
+        if (sess.googleEventId) {
+          await deleteGoogleCalendarEvent(sess.googleEventId);
+        }
+      } catch (err) {
+        console.error('Error deleting google event for session', sess._id, err);
+      }
+
+      // Notify players about cancellation (best-effort)
+      try {
+        const players = campaign.playerIds as any[];
+        for (const p of players) {
+          // Skip if no email
+          if (!p.email) continue;
+          try {
+            await sendSessionCancellation({
+              to: p.email,
+              playerName: p.username || 'Player',
+              campaignName: campaign.name,
+              sessionName: sess.name,
+              date: sess.date,
+              time: sess.time,
+            });
+          } catch (emailErr) {
+            console.error('Failed to send cancellation email to', p.email, emailErr);
+          }
+        }
+      } catch (err) {
+        console.error('Error notifying players for session', sess._id, err);
+      }
+    }
+
+    // Remove sessions
+    await Session.deleteMany({ campaignId: campaign._id });
+
+    // Finally remove campaign
     await campaign.deleteOne();
 
     return NextResponse.json(
-      { message: 'Campaign deleted successfully' },
+      { message: 'Campaign and related sessions deleted successfully' },
       { status: 200 }
     );
   } catch (error: any) {
