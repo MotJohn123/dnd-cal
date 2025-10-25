@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Calendar, Users, LogOut, Check, X } from 'lucide-react';
 import { signOut } from 'next-auth/react';
-import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths } from 'date-fns';
+import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, getDay } from 'date-fns';
 
 interface Session {
   _id: string;
@@ -96,7 +96,13 @@ export default function DashboardPage() {
   const getCalendarDays = () => {
     const start = startOfMonth(currentMonth);
     const end = endOfMonth(currentMonth);
-    return eachDayOfInterval({ start, end });
+    
+    // Get the start of the week (Monday) for the first day of the month
+    const calendarStart = startOfWeek(start, { weekStartsOn: 1 });
+    // Get the end of the week (Sunday) for the last day of the month
+    const calendarEnd = endOfWeek(end, { weekStartsOn: 1 });
+    
+    return eachDayOfInterval({ start: calendarStart, end: calendarEnd });
   };
 
   const getSessionsForDay = (day: Date) => {
@@ -187,7 +193,7 @@ export default function DashboardPage() {
             ) : (
               <div>
                 <div className="grid grid-cols-7 gap-1 mb-2">
-                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
                     <div key={day} className="text-center text-xs font-medium text-gray-600 py-2">
                       {day}
                     </div>
@@ -197,6 +203,7 @@ export default function DashboardPage() {
                   {getCalendarDays().map((day, idx) => {
                     const daySessions = getSessionsForDay(day);
                     const hasSession = daySessions.length > 0;
+                    const isCurrentMonth = day.getMonth() === currentMonth.getMonth();
                     
                     return (
                       <div
@@ -204,6 +211,7 @@ export default function DashboardPage() {
                         className={`
                           aspect-square p-1 border border-gray-200 rounded
                           ${hasSession ? 'bg-purple-50 border-purple-300' : 'bg-white'}
+                          ${!isCurrentMonth ? 'opacity-40' : ''}
                         `}
                       >
                         <div className="text-xs font-medium text-gray-700">
