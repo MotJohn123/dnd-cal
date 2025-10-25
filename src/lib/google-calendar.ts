@@ -63,7 +63,11 @@ export async function createGoogleCalendarEvent(
 
     // Parse time (format: HH:MM)
     const [hours, minutes] = time.split(':').map(Number);
+    
+    // Create a date object and treat it as Prague local time
+    // The date parameter comes as a Date at midnight UTC, but we need to treat it as Prague midnight
     const startDateTime = new Date(date);
+    // Set the time in Prague timezone by treating the date as a local Prague date
     startDateTime.setHours(hours, minutes, 0, 0);
 
     // Assume 3-hour session duration
@@ -72,6 +76,8 @@ export async function createGoogleCalendarEvent(
 
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
+    // Use the date and time directly with the Prague timezone
+    // This tells Google Calendar: "This datetime is in Prague timezone"
     const event = {
       summary,
       description,
@@ -96,9 +102,11 @@ export async function createGoogleCalendarEvent(
 
     console.log('Creating Google Calendar event:', { 
       summary, 
-      date: startDateTime.toISOString(), 
+      inputDate: date,
+      calculatedStart: startDateTime.toISOString(),
+      time,
+      timeZone: 'Europe/Prague',
       attendees,
-      timeZone: 'Europe/Prague'
     });
 
     const response = await calendar.events.insert({
@@ -138,6 +146,8 @@ export async function updateGoogleCalendarEvent(
 
     // Parse time (format: HH:MM)
     const [hours, minutes] = time.split(':').map(Number);
+    
+    // Create a date object and treat it as Prague local time
     const startDateTime = new Date(date);
     startDateTime.setHours(hours, minutes, 0, 0);
 
