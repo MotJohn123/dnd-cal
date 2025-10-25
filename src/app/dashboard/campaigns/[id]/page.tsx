@@ -560,7 +560,7 @@ function QuickScheduleModal({
         body: JSON.stringify({
           campaignId: campaign._id,
           name: name || undefined,
-          date: selectedDate.toISOString(),
+          date: format(selectedDate, 'yyyy-MM-dd'),
           time,
           location,
           confirmedPlayerIds: campaign.playerIds.map((p) => p._id),
