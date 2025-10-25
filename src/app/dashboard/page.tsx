@@ -228,8 +228,9 @@ export default function DashboardPage() {
                                 .toUpperCase()
                                 .slice(0, 2);
                               return (
-                                <div key={idx} className="text-xs font-semibold text-purple-700 truncate">
-                                  {emoji} {initials}
+                                <div key={idx} className="text-xs font-semibold text-purple-700 truncate flex items-center gap-0.5">
+                                  <span className="text-sm">{emoji}</span>
+                                  <span className="truncate">{initials}</span>
                                 </div>
                               );
                             })}
