@@ -56,10 +56,13 @@ export default function CampaignDetailPage() {
 
   const fetchCampaignDetails = async () => {
     try {
+      const today = new Date();
+      const next30Days = addDays(today, 30);
+      
       const [campaignRes, sessionsRes, availRes] = await Promise.all([
         fetch(`/api/campaigns/${params.id}`),
         fetch(`/api/sessions?campaignId=${params.id}`),
-        fetch(`/api/availability/campaign/${params.id}`),
+        fetch(`/api/availability/campaign/${params.id}?startDate=${today.toISOString()}&endDate=${next30Days.toISOString()}`),
       ]);
 
       if (campaignRes.ok) {
@@ -74,7 +77,10 @@ export default function CampaignDetailPage() {
 
       if (availRes.ok) {
         const availData = await availRes.json();
+        console.log('Availability data received:', availData);
         setAvailabilities(availData.availabilities || []);
+      } else {
+        console.error('Failed to fetch availability:', await availRes.text());
       }
     } catch (error) {
       console.error('Error fetching campaign details:', error);
@@ -238,10 +244,19 @@ function AvailabilityGrid({
     return campaign.availableDays.includes(dayName);
   });
 
+  console.log('AvailabilityGrid - Total availabilities:', availabilities.length);
+  console.log('AvailabilityGrid - Sample availability:', availabilities[0]);
+  console.log('AvailabilityGrid - Players:', campaign.playerIds.map(p => ({ id: p._id, name: p.username })));
+
   const getStatusForPlayerAndDate = (userId: string, date: Date) => {
-    const avail = availabilities.find((a) =>
-      a.userId._id === userId && isSameDay(parseISO(a.date), date)
-    );
+    const avail = availabilities.find((a) => {
+      const availUserId = typeof a.userId === 'object' ? a.userId._id : a.userId;
+      const matches = availUserId === userId && isSameDay(parseISO(a.date), date);
+      if (matches) {
+        console.log('Found match:', { userId, date: format(date, 'yyyy-MM-dd'), status: a.status });
+      }
+      return matches;
+    });
     return avail?.status || "Don't know";
   };
 

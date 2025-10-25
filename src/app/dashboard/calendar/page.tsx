@@ -18,6 +18,8 @@ interface Availability {
 interface Campaign {
   _id: string;
   name: string;
+  dmId: { _id: string };
+  playerIds: { _id: string }[];
   availableDays: string[];
 }
 
@@ -58,7 +60,11 @@ export default function CalendarPage() {
 
       if (campaignsRes.ok) {
         const data = await campaignsRes.json();
-        setCampaigns(data.campaigns);
+        // Filter out campaigns where the user is DM - DM doesn't need to set availability
+        const playerCampaigns = data.campaigns.filter((c: Campaign) => 
+          c.dmId._id !== session?.user?.id
+        );
+        setCampaigns(playerCampaigns);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -265,8 +271,8 @@ export default function CalendarPage() {
               </p>
             </div>
             <p className="text-sm text-gray-600">
-              💡 <strong>Tip:</strong> Your availability is shared across all campaigns. When you set your availability here,
-              all DMs in your campaigns can see it. Only set availability for campaign days (purple bordered)!
+              💡 <strong>Tip:</strong> Your availability is shared across all campaigns where you&apos;re a player. 
+              DMs don&apos;t need to set availability for their own campaigns. Only set availability for purple bordered days!
             </p>
           </div>
         </div>
