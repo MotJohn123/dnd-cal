@@ -163,6 +163,16 @@ export async function updateGoogleCalendarEvent(
     const endDateTime = new Date(startDateTime);
     endDateTime.setHours(startDateTime.getHours() + 3);
 
+    console.log('DEBUG Google Calendar Event Times:', {
+      inputDate: date.toISOString(),
+      inputTime: time,
+      hours,
+      minutes,
+      startDateTime: startDateTime.toISOString(),
+      endDateTime: endDateTime.toISOString(),
+      startDateTimeLocal: startDateTime.toString(),
+    });
+
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
     const event = {

@@ -131,6 +131,17 @@ export async function POST(req: NextRequest) {
       // Adjust: subtract hours to move back in UTC so that it becomes our target date in Prague
       pragueDate = new Date(utcDate.getTime() - hourOffset * 60 * 60 * 1000);
       
+      console.log('DEBUG Date Parsing:', {
+        inputDate: date,
+        parsedDate: { year, month, day },
+        utcDate: utcDate.toISOString(),
+        pragueStr,
+        pragueDate_parsed: { pragueM, pragueD, pragueY },
+        dayDiff,
+        hourOffset,
+        calculatedPragueDate: pragueDate.toISOString(),
+      });
+      
       if (isNaN(pragueDate.getTime())) {
         return NextResponse.json(
           { error: 'Invalid date format' },
