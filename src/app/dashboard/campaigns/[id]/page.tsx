@@ -4,8 +4,9 @@ import { useSession } from 'next-auth/react';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Users, Calendar, MapPin, Clock, Plus } from 'lucide-react';
+import { ArrowLeft, Users, Calendar, MapPin, Clock, Plus, Edit, Trash2, X } from 'lucide-react';
 import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
+import { EditCampaignModal, EditSessionModal } from '@/components/CampaignModals';
 
 interface Campaign {
   _id: string;
@@ -19,6 +20,7 @@ interface Campaign {
 interface Session {
   _id: string;
   campaignId: string;
+  name?: string;
   date: string;
   time: string;
   location: string;
@@ -41,6 +43,9 @@ export default function CampaignDetailPage() {
   const [availabilities, setAvailabilities] = useState<AvailabilityRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [showEditCampaignModal, setShowEditCampaignModal] = useState(false);
+  const [showEditSessionModal, setShowEditSessionModal] = useState(false);
+  const [selectedSession, setSelectedSession] = useState<Session | null>(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -92,6 +97,29 @@ export default function CampaignDetailPage() {
 
   const isDM = session?.user?.id === campaign?.dmId._id;
 
+  const handleDeleteSession = async (sessionId: string) => {
+    if (!confirm('Are you sure you want to cancel this session? All players will be notified.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/sessions/${sessionId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        alert('Session cancelled successfully. Players have been notified.');
+        fetchCampaignDetails();
+      } else {
+        const data = await response.json();
+        alert(data.error || 'Failed to cancel session');
+      }
+    } catch (error) {
+      console.error('Error cancelling session:', error);
+      alert('Failed to cancel session');
+    }
+  };
+
   if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -142,7 +170,17 @@ export default function CampaignDetailPage() {
           {/* Campaign Info */}
           <div className="lg:col-span-1 space-y-6">
             <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Campaign Details</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900">Campaign Details</h2>
+                {isDM && (
+                  <button
+                    onClick={() => setShowEditCampaignModal(true)}
+                    className="text-purple-600 hover:text-purple-700 transition"
+                  >
+                    <Edit className="w-5 h-5" />
+                  </button>
+                )}
+              </div>
               
               {campaign.description && (
                 <div className="mb-4">
@@ -183,15 +221,41 @@ export default function CampaignDetailPage() {
               ) : (
                 <div className="space-y-3">
                   {sessions.map((session) => (
-                    <div key={session._id} className="border-l-4 border-purple-600 pl-3">
-                      <p className="font-medium text-gray-900">
-                        {format(parseISO(session.date), 'MMM d, yyyy')}
-                      </p>
-                      <p className="text-sm text-gray-600">{session.time}</p>
-                      <p className="text-sm text-gray-600">{session.location}</p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {session.confirmedPlayerIds.length} players confirmed
-                      </p>
+                    <div key={session._id} className="border-l-4 border-purple-600 pl-3 pb-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900">
+                            {session.name || 'Session'}
+                          </p>
+                          <p className="text-sm text-gray-700">
+                            {format(parseISO(session.date), 'MMM d, yyyy')}
+                          </p>
+                          <p className="text-sm text-gray-600">{session.time}</p>
+                          <p className="text-sm text-gray-600">{session.location}</p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {session.confirmedPlayerIds.length} players confirmed
+                          </p>
+                        </div>
+                        {isDM && (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => {
+                                setSelectedSession(session);
+                                setShowEditSessionModal(true);
+                              }}
+                              className="text-blue-600 hover:text-blue-700 transition"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteSession(session._id)}
+                              className="text-red-600 hover:text-red-700 transition"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -222,6 +286,35 @@ export default function CampaignDetailPage() {
           onClose={() => setShowScheduleModal(false)}
           onSuccess={() => {
             setShowScheduleModal(false);
+            fetchCampaignDetails();
+          }}
+        />
+      )}
+
+      {/* Edit Campaign Modal */}
+      {showEditCampaignModal && (
+        <EditCampaignModal
+          campaign={campaign}
+          onClose={() => setShowEditCampaignModal(false)}
+          onSuccess={() => {
+            setShowEditCampaignModal(false);
+            fetchCampaignDetails();
+          }}
+        />
+      )}
+
+      {/* Edit Session Modal */}
+      {showEditSessionModal && selectedSession && (
+        <EditSessionModal
+          session={selectedSession}
+          campaign={campaign}
+          onClose={() => {
+            setShowEditSessionModal(false);
+            setSelectedSession(null);
+          }}
+          onSuccess={() => {
+            setShowEditSessionModal(false);
+            setSelectedSession(null);
             fetchCampaignDetails();
           }}
         />
@@ -452,6 +545,7 @@ function QuickScheduleModal({
   onClose: () => void;
   onSuccess: () => void;
 }) {
+  const [name, setName] = useState('');
   const [time, setTime] = useState('19:00');
   const [location, setLocation] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -466,6 +560,7 @@ function QuickScheduleModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           campaignId: campaign._id,
+          name: name || undefined,
           date: selectedDate.toISOString(),
           time,
           location,
@@ -493,6 +588,20 @@ function QuickScheduleModal({
         <h2 className="text-2xl font-bold text-gray-900 mb-4">Schedule Session</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Session Name <span className="text-gray-400">(Optional)</span>
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g., The Dragon's Lair, Session 5"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-600"
+              maxLength={100}
+            />
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Date

@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { campaignId, date, time, location } = await req.json();
+    const { campaignId, name, date, time, location } = await req.json();
 
     if (!campaignId || !date || !time || !location) {
       return NextResponse.json(
@@ -86,6 +86,7 @@ export async function POST(req: NextRequest) {
     // Create session
     const newSession = await Session.create({
       campaignId,
+      name,
       date: new Date(date),
       time,
       location,

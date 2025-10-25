@@ -2,6 +2,7 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface ISession extends Document {
   campaignId: mongoose.Types.ObjectId;
+  name?: string;
   date: Date;
   time: string;
   location: string;
@@ -17,6 +18,10 @@ const SessionSchema = new Schema<ISession>(
       type: Schema.Types.ObjectId,
       ref: 'Campaign',
       required: true,
+    },
+    name: {
+      type: String,
+      maxlength: [100, 'Session name cannot exceed 100 characters'],
     },
     date: {
       type: Date,
