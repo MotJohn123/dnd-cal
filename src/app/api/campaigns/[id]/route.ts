@@ -19,7 +19,7 @@ export async function GET(
 
     await dbConnect();
 
-    const campaign = await Campaign.findById(params.id)
+    const campaign = await Campaign.findById(id)
       .populate('dmId', 'username email')
       .populate('playerIds', 'username email');
 
