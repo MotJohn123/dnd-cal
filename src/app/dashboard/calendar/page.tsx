@@ -140,10 +140,11 @@ export default function CalendarPage() {
           const isPast = day < new Date(new Date().setHours(0, 0, 0, 0));
           const dayCampaigns = getCampaignsForDay(day);
           const hasCampaigns = dayCampaigns.length > 0;
+          const canEdit = !isPast && hasCampaigns;
 
           return (
             <div key={day.toISOString()} className="aspect-square">
-              <div className={`h-full flex flex-col p-1 border-2 rounded ${hasCampaigns ? 'border-purple-400 bg-purple-50' : 'border-gray-200'}`}>
+              <div className={`h-full flex flex-col p-1 border-2 rounded ${hasCampaigns ? 'border-purple-400 bg-purple-50' : 'border-gray-200 bg-gray-50'}`}>
                 <div className="text-sm text-gray-600 text-center mb-1 flex items-center justify-center gap-1">
                   {format(day, 'd')}
                   {hasCampaigns && (
@@ -152,7 +153,7 @@ export default function CalendarPage() {
                     </span>
                   )}
                 </div>
-                {!isPast && (
+                {canEdit && (
                   <select
                     value={status}
                     onChange={(e) => setDayAvailability(day, e.target.value as AvailabilityStatus)}
@@ -167,6 +168,11 @@ export default function CalendarPage() {
                 {isPast && (
                   <div className="flex-1 bg-gray-100 rounded flex items-center justify-center text-xs text-gray-400">
                     Past
+                  </div>
+                )}
+                {!isPast && !hasCampaigns && (
+                  <div className="flex-1 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-500">
+                    −
                   </div>
                 )}
               </div>
@@ -249,12 +255,18 @@ export default function CalendarPage() {
             <div className="flex items-start gap-2">
               <div className="w-6 h-6 border-2 border-purple-400 bg-purple-50 rounded flex-shrink-0"></div>
               <p className="text-sm text-gray-600">
-                <strong>Days with purple border</strong> indicate campaign days. The number shows how many campaigns have sessions on that day of the week.
+                <strong>Purple bordered days</strong> are campaign days where you can set your availability. The number shows how many campaigns have sessions on that day of the week.
+              </p>
+            </div>
+            <div className="flex items-start gap-2">
+              <div className="w-6 h-6 border-2 border-gray-200 bg-gray-50 rounded flex-shrink-0"></div>
+              <p className="text-sm text-gray-600">
+                <strong>Gray days</strong> are not part of any campaign schedule. You cannot set availability for these days.
               </p>
             </div>
             <p className="text-sm text-gray-600">
               💡 <strong>Tip:</strong> Your availability is shared across all campaigns. When you set your availability here,
-              all DMs in your campaigns can see it. Focus on setting availability for highlighted campaign days!
+              all DMs in your campaigns can see it. Only set availability for campaign days (purple bordered)!
             </p>
           </div>
         </div>

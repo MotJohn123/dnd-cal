@@ -25,13 +25,11 @@ interface Session {
   confirmedPlayerIds: { _id: string; username: string }[];
 }
 
-interface Availability {
-  userId: string;
-  username: string;
-  availabilities: {
-    date: string;
-    status: string;
-  }[];
+interface AvailabilityRecord {
+  _id: string;
+  userId: { _id: string; username: string; email: string };
+  date: string;
+  status: string;
 }
 
 export default function CampaignDetailPage() {
@@ -40,7 +38,7 @@ export default function CampaignDetailPage() {
   const params = useParams();
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
-  const [availabilities, setAvailabilities] = useState<Availability[]>([]);
+  const [availabilities, setAvailabilities] = useState<AvailabilityRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
 
@@ -229,7 +227,7 @@ function AvailabilityGrid({
   availabilities,
 }: {
   campaign: Campaign;
-  availabilities: Availability[];
+  availabilities: AvailabilityRecord[];
 }) {
   const today = new Date();
   const next30Days = eachDayOfInterval({
@@ -241,13 +239,10 @@ function AvailabilityGrid({
   });
 
   const getStatusForPlayerAndDate = (userId: string, date: Date) => {
-    const player = availabilities.find((a) => a.userId === userId);
-    if (!player) return 'Don&apos;t know';
-
-    const avail = player.availabilities.find((a) =>
-      isSameDay(parseISO(a.date), date)
+    const avail = availabilities.find((a) =>
+      a.userId._id === userId && isSameDay(parseISO(a.date), date)
     );
-    return avail?.status || 'Don&apos;t know';
+    return avail?.status || "Don't know";
   };
 
   const statusColors = {
