@@ -92,7 +92,9 @@ export async function PUT(
       try {
         type PopulatedPlayer = { _id: any; username: string; email: string };
         const players = campaign.playerIds as unknown as PopulatedPlayer[];
-        const eventTitle = sessionDoc.name || campaign.name;
+        
+        // Format event title: [Campaign Name]:[Session Name] or just [Campaign Name]
+        const eventTitle = sessionDoc.name ? `${campaign.name}: ${sessionDoc.name}` : campaign.name;
 
         // Get DM email
         const dm = await User.findById(campaign.dmId);

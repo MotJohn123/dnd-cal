@@ -128,7 +128,9 @@ export async function POST(req: NextRequest) {
         ...players.map((p) => p.email), // Players get calendar invites
       ];
 
-      const eventTitle = name || `${campaign.name} - TTRPG Session`;
+      // Format event title: [Campaign Name]:[Session Name] or just [Campaign Name]
+      const eventTitle = name ? `${campaign.name}: ${name}` : campaign.name;
+      
       const eventId = await createGoogleCalendarEvent({
         summary: eventTitle,
         description: `Campaign: ${campaign.name}\nLocation: ${location}`,
