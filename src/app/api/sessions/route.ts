@@ -86,17 +86,21 @@ export async function POST(req: NextRequest) {
     // Create session
     // Note: date is stored as Date object, time as string (HH:MM)
     // All times are assumed to be in Europe/Prague timezone (CET/CEST)
+    // Parse date as Prague local time (not UTC)
+    const [year, month, day] = date.split('-').map(Number);
+    const pragueDate = new Date(year, month - 1, day);
+    
     const newSession = await Session.create({
       campaignId,
       name,
-      date: new Date(date),
+      date: pragueDate,
       time,
       location,
       confirmedPlayerIds: players.map((p) => p._id),
     });
 
     // Update all players' AND DM's availability to "Not available" for this date
-    const sessionDate = new Date(date);
+    const sessionDate = new Date(year, month - 1, day);
     sessionDate.setHours(0, 0, 0, 0);
 
     // Mark all players as not available for ALL their campaigns on this date

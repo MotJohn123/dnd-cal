@@ -81,7 +81,11 @@ export async function PUT(
 
     // Update session
     if (name !== undefined) sessionDoc.name = name;
-    if (date) sessionDoc.date = new Date(date);
+    if (date) {
+      // Parse date as Prague local time (not UTC)
+      const [year, month, day] = date.split('-').map(Number);
+      sessionDoc.date = new Date(year, month - 1, day);
+    }
     if (time) sessionDoc.time = time;
     if (location) sessionDoc.location = location;
 
