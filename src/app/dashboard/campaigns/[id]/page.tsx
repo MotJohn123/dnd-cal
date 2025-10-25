@@ -356,28 +356,21 @@ function AvailabilityGrid({
   const getStatusForPlayerAndDate = (userId: string, date: Date) => {
     const avail = availabilities.find((a) => {
       const availUserId = typeof a.userId === 'object' ? a.userId._id : a.userId;
-      const matches = availUserId === userId && isSameDay(parseISO(a.date), date);
-      if (matches) {
-        console.log('Found match:', { userId, date: format(date, 'yyyy-MM-dd'), status: a.status });
-      }
-      return matches;
+      return availUserId === userId && isSameDay(parseISO(a.date), date);
     });
     return avail?.status || "Don't know";
   };
 
   const getPlayersAvailableForDate = (date: Date) => {
-    const available = campaign.playerIds.filter(player => {
-      const status = getStatusForPlayerAndDate(player._id, date);
-      return status === 'Sure';
-    }).length;
-    const maybe = campaign.playerIds.filter(player => {
-      const status = getStatusForPlayerAndDate(player._id, date);
-      return status === 'Maybe';
-    }).length;
-    const notAvailable = campaign.playerIds.filter(player => {
-      const status = getStatusForPlayerAndDate(player._id, date);
-      return status === 'Not available';
-    }).length;
+    // Cache status lookups to avoid multiple calls per player
+    const playerStatuses = campaign.playerIds.map(player => ({
+      player,
+      status: getStatusForPlayerAndDate(player._id, date)
+    }));
+    
+    const available = playerStatuses.filter(ps => ps.status === 'Sure').length;
+    const maybe = playerStatuses.filter(ps => ps.status === 'Maybe').length;
+    const notAvailable = playerStatuses.filter(ps => ps.status === 'Not available').length;
     
     return { available, maybe, notAvailable, total: campaign.playerIds.length };
   };

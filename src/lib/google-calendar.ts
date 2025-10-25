@@ -6,6 +6,7 @@ let oauth2Client: any = null;
 try {
   if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && process.env.GOOGLE_PRIVATE_KEY) {
     // Use service account
+    console.log('Initializing Google Calendar with Service Account...');
     oauth2Client = new google.auth.JWT(
       process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
       undefined,
@@ -14,6 +15,12 @@ try {
     );
   } else if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_REFRESH_TOKEN) {
     // Use OAuth with refresh token
+    console.log('Initializing Google Calendar with OAuth2...');
+    console.log('Client ID:', process.env.GOOGLE_CLIENT_ID?.substring(0, 20) + '...');
+    console.log('Has Client Secret:', !!process.env.GOOGLE_CLIENT_SECRET);
+    console.log('Has Refresh Token:', !!process.env.GOOGLE_REFRESH_TOKEN);
+    console.log('Redirect URI:', process.env.GOOGLE_REDIRECT_URI);
+    
     oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,
@@ -22,6 +29,12 @@ try {
     oauth2Client.setCredentials({
       refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
     });
+    console.log('Google Calendar OAuth2 client initialized successfully');
+  } else {
+    console.warn('Google Calendar not configured - missing environment variables');
+    console.log('Has GOOGLE_CLIENT_ID:', !!process.env.GOOGLE_CLIENT_ID);
+    console.log('Has GOOGLE_CLIENT_SECRET:', !!process.env.GOOGLE_CLIENT_SECRET);
+    console.log('Has GOOGLE_REFRESH_TOKEN:', !!process.env.GOOGLE_REFRESH_TOKEN);
   }
 } catch (error) {
   console.error('Failed to initialize Google OAuth client:', error);
@@ -81,7 +94,12 @@ export async function createGoogleCalendarEvent(
       },
     };
 
-    console.log('Creating Google Calendar event:', { summary, date: startDateTime, attendees });
+    console.log('Creating Google Calendar event:', { 
+      summary, 
+      date: startDateTime.toISOString(), 
+      attendees,
+      timeZone: 'Europe/Prague'
+    });
 
     const response = await calendar.events.insert({
       calendarId: 'primary',
@@ -90,10 +108,18 @@ export async function createGoogleCalendarEvent(
     });
 
     console.log('Google Calendar event created successfully:', response.data.id);
+    console.log('Event link:', response.data.htmlLink);
     return response.data.id || null;
   } catch (error: any) {
     console.error('Failed to create Google Calendar event:', error.message);
-    console.error('Error details:', error);
+    if (error.response) {
+      console.error('Response status:', error.response.status);
+      console.error('Response data:', JSON.stringify(error.response.data, null, 2));
+    }
+    if (error.code) {
+      console.error('Error code:', error.code);
+    }
+    console.error('Full error:', error);
     return null;
   }
 }
