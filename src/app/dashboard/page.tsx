@@ -2,20 +2,106 @@
 
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Calendar, Users, LogOut } from 'lucide-react';
+import { Calendar, Users, LogOut, Check, X } from 'lucide-react';
 import { signOut } from 'next-auth/react';
+import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths } from 'date-fns';
+
+interface Session {
+  _id: string;
+  campaignId: { _id: string; name: string };
+  name?: string;
+  date: string;
+  time: string;
+  location: string;
+  confirmedPlayerIds: { _id: string; username: string }[];
+}
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/auth/login');
     }
   }, [status, router]);
+
+  useEffect(() => {
+    if (session) {
+      fetchSessions();
+    }
+  }, [session]);
+
+  const fetchSessions = async () => {
+    try {
+      const response = await fetch('/api/sessions');
+      if (response.ok) {
+        const data = await response.json();
+        setSessions(data.sessions || []);
+      }
+    } catch (error) {
+      console.error('Error fetching sessions:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConfirm = async (sessionId: string) => {
+    try {
+      const response = await fetch(`/api/sessions/${sessionId}/confirm`, {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        fetchSessions();
+      } else {
+        const data = await response.json();
+        alert(data.error || 'Failed to confirm attendance');
+      }
+    } catch (error) {
+      console.error('Error confirming:', error);
+      alert('Failed to confirm attendance');
+    }
+  };
+
+  const handleUnconfirm = async (sessionId: string) => {
+    try {
+      const response = await fetch(`/api/sessions/${sessionId}/unconfirm`, {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        fetchSessions();
+      } else {
+        const data = await response.json();
+        alert(data.error || 'Failed to cancel attendance');
+      }
+    } catch (error) {
+      console.error('Error unconfirming:', error);
+      alert('Failed to cancel attendance');
+    }
+  };
+
+  const isPlayerConfirmed = (sessionObj: Session) => {
+    return sessionObj.confirmedPlayerIds.some(
+      (player) => player._id === session?.user?.id
+    );
+  };
+
+  const getCalendarDays = () => {
+    const start = startOfMonth(currentMonth);
+    const end = endOfMonth(currentMonth);
+    return eachDayOfInterval({ start, end });
+  };
+
+  const getSessionsForDay = (day: Date) => {
+    return sessions.filter((s) => isSameDay(parseISO(s.date), day));
+  };
 
   if (status === 'loading') {
     return (
@@ -50,24 +136,160 @@ export default function DashboardPage() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
-          <Link href="/dashboard/campaigns" className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition cursor-pointer">
-            <Users className="w-12 h-12 text-purple-600 mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">My Campaigns</h2>
-            <p className="text-gray-600">View and manage your campaigns</p>
-          </Link>
+        <div className="grid lg:grid-cols-2 gap-6 mb-8">
+          {/* Quick Links */}
+          <div className="space-y-6">
+            <div className="grid gap-6">
+              <Link href="/dashboard/campaigns" className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition cursor-pointer">
+                <Users className="w-12 h-12 text-purple-600 mb-4" />
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">My Campaigns</h2>
+                <p className="text-gray-600">View and manage your campaigns</p>
+              </Link>
 
-          <Link href="/dashboard/calendar" className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition cursor-pointer">
-            <Calendar className="w-12 h-12 text-purple-600 mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Calendar</h2>
-            <p className="text-gray-600">Set your availability and view sessions</p>
-          </Link>
+              <Link href="/dashboard/calendar" className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition cursor-pointer">
+                <Calendar className="w-12 h-12 text-purple-600 mb-4" />
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">Availability Calendar</h2>
+                <p className="text-gray-600">Set your availability and view sessions</p>
+              </Link>
 
-          <Link href="/dashboard/sessions" className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition cursor-pointer">
-            <Calendar className="w-12 h-12 text-purple-600 mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Upcoming Sessions</h2>
-            <p className="text-gray-600">View all scheduled sessions</p>
-          </Link>
+              <Link href="/dashboard/sessions" className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition cursor-pointer">
+                <Calendar className="w-12 h-12 text-purple-600 mb-4" />
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">All Sessions</h2>
+                <p className="text-gray-600">View all scheduled sessions</p>
+              </Link>
+            </div>
+          </div>
+
+          {/* Calendar Preview */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">
+                {format(currentMonth, 'MMMM yyyy')}
+              </h2>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+                  className="px-3 py-1 border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  ←
+                </button>
+                <button
+                  onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+                  className="px-3 py-1 border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  →
+                </button>
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="text-center py-8 text-gray-600">Loading sessions...</div>
+            ) : (
+              <div>
+                <div className="grid grid-cols-7 gap-1 mb-2">
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+                    <div key={day} className="text-center text-xs font-medium text-gray-600 py-2">
+                      {day}
+                    </div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-7 gap-1">
+                  {getCalendarDays().map((day, idx) => {
+                    const daySessions = getSessionsForDay(day);
+                    const hasSession = daySessions.length > 0;
+                    
+                    return (
+                      <div
+                        key={idx}
+                        className={`
+                          aspect-square p-1 border border-gray-200 rounded
+                          ${hasSession ? 'bg-purple-50 border-purple-300' : 'bg-white'}
+                        `}
+                      >
+                        <div className="text-xs font-medium text-gray-700">
+                          {format(day, 'd')}
+                        </div>
+                        {hasSession && (
+                          <div className="text-xs text-purple-600 font-bold mt-1">
+                            🎲 {daySessions.length}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Upcoming Sessions with Confirmation */}
+        <div className="bg-white rounded-lg shadow p-6 mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Upcoming Sessions</h2>
+          
+          {loading ? (
+            <div className="text-gray-600">Loading sessions...</div>
+          ) : sessions.length === 0 ? (
+            <div className="text-gray-600">No upcoming sessions scheduled</div>
+          ) : (
+            <div className="space-y-4">
+              {sessions.map((sessionObj) => {
+                const isConfirmed = isPlayerConfirmed(sessionObj);
+                
+                return (
+                  <div
+                    key={sessionObj._id}
+                    className="border border-gray-200 rounded-lg p-4 hover:border-purple-300 transition"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {sessionObj.name || sessionObj.campaignId.name}
+                        </h3>
+                        <p className="text-sm text-gray-600 mb-2">
+                          Campaign: {sessionObj.campaignId.name}
+                        </p>
+                        <div className="flex flex-wrap gap-4 text-sm text-gray-700">
+                          <span>📅 {format(parseISO(sessionObj.date), 'MMM d, yyyy')}</span>
+                          <span>🕐 {sessionObj.time}</span>
+                          <span>📍 {sessionObj.location}</span>
+                        </div>
+                        <div className="mt-2 text-sm text-gray-600">
+                          {sessionObj.confirmedPlayerIds.length} player(s) confirmed
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2 ml-4">
+                        {isConfirmed ? (
+                          <button
+                            onClick={() => handleUnconfirm(sessionObj._id)}
+                            className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition"
+                          >
+                            <X className="w-4 h-4" />
+                            Cancel
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleConfirm(sessionObj._id)}
+                            className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition"
+                          >
+                            <Check className="w-4 h-4" />
+                            Confirm
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {isConfirmed && (
+                      <div className="mt-3 bg-green-50 border border-green-200 rounded-md px-3 py-2 text-sm text-green-800">
+                        ✓ You have confirmed attendance for this session
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
