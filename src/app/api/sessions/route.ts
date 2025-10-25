@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
     const campaignIds = campaigns.map((c) => c._id);
 
     const sessions = await Session.find({ campaignId: { $in: campaignIds } })
-      .populate('campaignId', 'name dmId')
+      .populate('campaignId', 'name dmId emoji')
       .populate('confirmedPlayerIds', 'username email')
       .sort({ date: 1 });
 

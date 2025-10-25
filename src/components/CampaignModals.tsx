@@ -20,7 +20,7 @@ interface Campaign {
 
 interface Session {
   _id: string;
-  campaignId: string;
+  campaignId: string | { _id: string; name: string };
   name?: string;
   date: string;
   time: string;
