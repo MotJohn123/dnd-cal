@@ -78,7 +78,8 @@ export default function CampaignDetailPage() {
       if (availRes.ok) {
         const availData = await availRes.json();
         console.log('Availability data received:', availData);
-        setAvailabilities(availData.availabilities || []);
+        // API returns 'availability' not 'availabilities'
+        setAvailabilities(availData.availability || []);
       } else {
         console.error('Failed to fetch availability:', await availRes.text());
       }
