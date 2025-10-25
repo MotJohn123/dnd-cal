@@ -71,6 +71,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
     }
 
+    // Type assertion for populated fields
+    type PopulatedPlayer = { _id: any; username: string; email: string };
+    const players = campaign.playerIds as unknown as PopulatedPlayer[];
+
     // Only DM can create sessions
     if (campaign.dmId.toString() !== session.user.id) {
       return NextResponse.json(
@@ -85,14 +89,14 @@ export async function POST(req: NextRequest) {
       date: new Date(date),
       time,
       location,
-      confirmedPlayerIds: campaign.playerIds.map((p: any) => p._id),
+      confirmedPlayerIds: players.map((p) => p._id),
     });
 
     // Update all players' availability to "Not available" for this date
     const sessionDate = new Date(date);
     sessionDate.setHours(0, 0, 0, 0);
 
-    for (const player of campaign.playerIds) {
+    for (const player of players) {
       await Availability.findOneAndUpdate(
         { userId: player._id, date: sessionDate },
         { status: 'Not available' },
@@ -109,7 +113,7 @@ export async function POST(req: NextRequest) {
         location,
         date: sessionDate,
         time,
-        attendees: campaign.playerIds.map((p: any) => p.email),
+        attendees: players.map((p) => p.email),
       });
 
       if (eventId) {
@@ -123,7 +127,7 @@ export async function POST(req: NextRequest) {
 
     // Send email invitations
     try {
-      for (const player of campaign.playerIds) {
+      for (const player of players) {
         await sendSessionInvite({
           to: player.email,
           playerName: player.username,
