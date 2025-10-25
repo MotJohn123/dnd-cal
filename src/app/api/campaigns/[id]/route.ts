@@ -7,8 +7,9 @@ import Campaign from '@/models/Campaign';
 // GET /api/campaigns/[id] - Get a specific campaign
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const session = await getServerSession(authOptions);
 
@@ -48,8 +49,9 @@ export async function GET(
 // PATCH /api/campaigns/[id] - Update a campaign
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const session = await getServerSession(authOptions);
 
@@ -59,7 +61,7 @@ export async function PATCH(
 
     await dbConnect();
 
-    const campaign = await Campaign.findById(params.id);
+    const campaign = await Campaign.findById(id);
 
     if (!campaign) {
       return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
@@ -98,8 +100,9 @@ export async function PATCH(
 // DELETE /api/campaigns/[id] - Delete a campaign
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const session = await getServerSession(authOptions);
 
@@ -109,7 +112,7 @@ export async function DELETE(
 
     await dbConnect();
 
-    const campaign = await Campaign.findById(params.id);
+    const campaign = await Campaign.findById(id);
 
     if (!campaign) {
       return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
