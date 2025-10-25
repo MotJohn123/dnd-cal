@@ -99,33 +99,37 @@ export async function POST(req: NextRequest) {
       }
       const [year, month, day] = parts.map(Number);
       
-      // Create a date representing midnight in Prague timezone
-      // We need to convert from Prague local time to UTC
-      // Get a reference date in Prague to determine the UTC offset
-      const pragueFormatter = new Intl.DateTimeFormat('en-US', {
+      // Create a date at UTC that when interpreted in Prague timezone equals the desired date at midnight
+      // Prague is UTC+1 (CET, winter) or UTC+2 (CEST, summer)
+      // 
+      // Example: We want December 1, 2025 at 00:00 Prague time
+      // December is in CET (UTC+1), so:
+      // December 1, 2025 00:00 CET = November 30, 2025 23:00 UTC
+      
+      // Create UTC date at the input date
+      const utcDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+      
+      // Create a Formatter for Prague timezone
+      const pragueDate_formatted = new Date(utcDate);
+      
+      // Get Prague representation of this UTC date
+      const formatter = new Intl.DateTimeFormat('en-US', {
         timeZone: 'Europe/Prague',
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false,
       });
       
-      // Create UTC date at midnight
-      const utcDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+      const pragueStr = formatter.format(pragueDate_formatted);
+      const [pragueM, pragueD, pragueY] = pragueStr.split('/').map(Number);
       
-      // Get what this UTC date looks like in Prague time
-      const parts_array = pragueFormatter.formatToParts(utcDate);
-      const pragueHour = parseInt(parts_array.find(p => p.type === 'hour')?.value || '0');
-      const pragueDay = parseInt(parts_array.find(p => p.type === 'day')?.value || '1');
+      // Calculate how many hours we're off
+      // If Prague date is different from our target date, we need to adjust
+      const dayDiff = day - pragueD;
+      const hourOffset = dayDiff * 24;
       
-      // Calculate offset: if UTC midnight shows as some Prague time, we need to shift
-      const offset = (pragueDay - day) * 24 + pragueHour;
-      
-      // Adjust UTC date by the offset to get Prague midnight
-      pragueDate = new Date(utcDate.getTime() - offset * 60 * 60 * 1000);
+      // Adjust: subtract hours to move back in UTC so that it becomes our target date in Prague
+      pragueDate = new Date(utcDate.getTime() - hourOffset * 60 * 60 * 1000);
       
       if (isNaN(pragueDate.getTime())) {
         return NextResponse.json(
