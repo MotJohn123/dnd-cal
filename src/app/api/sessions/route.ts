@@ -98,7 +98,34 @@ export async function POST(req: NextRequest) {
         );
       }
       const [year, month, day] = parts.map(Number);
-      pragueDate = new Date(year, month - 1, day);
+      
+      // Create a date representing midnight in Prague timezone
+      // We need to convert from Prague local time to UTC
+      // Get a reference date in Prague to determine the UTC offset
+      const pragueFormatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Europe/Prague',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+      });
+      
+      // Create UTC date at midnight
+      const utcDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+      
+      // Get what this UTC date looks like in Prague time
+      const parts_array = pragueFormatter.formatToParts(utcDate);
+      const pragueHour = parseInt(parts_array.find(p => p.type === 'hour')?.value || '0');
+      const pragueDay = parseInt(parts_array.find(p => p.type === 'day')?.value || '1');
+      
+      // Calculate offset: if UTC midnight shows as some Prague time, we need to shift
+      const offset = (pragueDay - day) * 24 + pragueHour;
+      
+      // Adjust UTC date by the offset to get Prague midnight
+      pragueDate = new Date(utcDate.getTime() - offset * 60 * 60 * 1000);
       
       if (isNaN(pragueDate.getTime())) {
         return NextResponse.json(
