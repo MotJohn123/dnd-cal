@@ -84,6 +84,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Create session
+    // Note: date is stored as Date object, time as string (HH:MM)
+    // All times are assumed to be in Europe/Prague timezone (CET/CEST)
     const newSession = await Session.create({
       campaignId,
       name,

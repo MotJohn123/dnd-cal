@@ -300,7 +300,7 @@ export function EditSessionModal({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Time
+              Time (Prague/Berlin timezone - CET/CEST)
             </label>
             <input
               type="time"

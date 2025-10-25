@@ -65,11 +65,11 @@ export async function createGoogleCalendarEvent(
       location,
       start: {
         dateTime: startDateTime.toISOString(),
-        timeZone: 'UTC', // Should be user's timezone in production
+        timeZone: 'Europe/Prague', // Prague/Berlin timezone (CET/CEST)
       },
       end: {
         dateTime: endDateTime.toISOString(),
-        timeZone: 'UTC',
+        timeZone: 'Europe/Prague',
       },
       attendees: attendees.map((email) => ({ email })),
       reminders: {
@@ -127,11 +127,11 @@ export async function updateGoogleCalendarEvent(
       location,
       start: {
         dateTime: startDateTime.toISOString(),
-        timeZone: 'UTC',
+        timeZone: 'Europe/Prague', // Prague/Berlin timezone (CET/CEST)
       },
       end: {
         dateTime: endDateTime.toISOString(),
-        timeZone: 'UTC',
+        timeZone: 'Europe/Prague',
       },
       attendees: attendees.map((email) => ({ email })),
       reminders: {
