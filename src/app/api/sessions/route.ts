@@ -116,13 +116,24 @@ export async function POST(req: NextRequest) {
     // Create Google Calendar event (if configured)
     try {
       const dm = await User.findById(campaign.dmId);
+      if (!dm) {
+        throw new Error('DM not found');
+      }
+
+      // Include both DM and players in the calendar event
+      const allAttendees = [
+        dm.email, // DM gets calendar invite
+        ...players.map((p) => p.email), // Players get calendar invites
+      ];
+
+      const eventTitle = name || `${campaign.name} - TTRPG Session`;
       const eventId = await createGoogleCalendarEvent({
-        summary: `${campaign.name} - TTRPG Session`,
+        summary: eventTitle,
         description: `Campaign: ${campaign.name}\nLocation: ${location}`,
         location,
         date: sessionDate,
         time,
-        attendees: players.map((p) => p.email),
+        attendees: allAttendees,
       });
 
       if (eventId) {

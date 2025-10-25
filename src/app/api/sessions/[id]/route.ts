@@ -7,6 +7,7 @@ import Campaign from '@/models/Campaign';
 import Availability from '@/models/Availability';
 import { sendSessionUpdate, sendSessionCancellation } from '@/lib/email';
 import { deleteGoogleCalendarEvent, updateGoogleCalendarEvent } from '@/lib/google-calendar';
+import User from '@/models/User';
 
 // GET /api/sessions/[id] - Get a specific session
 export async function GET(
@@ -93,13 +94,25 @@ export async function PUT(
         const players = campaign.playerIds as unknown as PopulatedPlayer[];
         const eventTitle = sessionDoc.name || campaign.name;
 
+        // Get DM email
+        const dm = await User.findById(campaign.dmId);
+        if (!dm) {
+          throw new Error('DM not found');
+        }
+
+        // Include both DM and players in the calendar event
+        const allAttendees = [
+          dm.email, // DM gets calendar update
+          ...players.map((p) => p.email), // Players get calendar updates
+        ];
+
         await updateGoogleCalendarEvent(sessionDoc.googleEventId, {
           summary: eventTitle,
           description: `TTRPG Session for ${campaign.name}`,
           location: sessionDoc.location,
           date: sessionDoc.date,
           time: sessionDoc.time,
-          attendees: players.map((p) => p.email),
+          attendees: allAttendees,
         });
       } catch (calendarError) {
         console.error('Failed to update Google Calendar event:', calendarError);
