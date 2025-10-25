@@ -87,8 +87,31 @@ export async function POST(req: NextRequest) {
     // Note: date is stored as Date object, time as string (HH:MM)
     // All times are assumed to be in Europe/Prague timezone (CET/CEST)
     // Parse date as Prague local time (not UTC)
-    const [year, month, day] = date.split('-').map(Number);
-    const pragueDate = new Date(year, month - 1, day);
+    let pragueDate: Date;
+    
+    if (typeof date === 'string') {
+      const parts = date.split('-');
+      if (parts.length !== 3) {
+        return NextResponse.json(
+          { error: 'Date must be in YYYY-MM-DD format' },
+          { status: 400 }
+        );
+      }
+      const [year, month, day] = parts.map(Number);
+      pragueDate = new Date(year, month - 1, day);
+      
+      if (isNaN(pragueDate.getTime())) {
+        return NextResponse.json(
+          { error: 'Invalid date format' },
+          { status: 400 }
+        );
+      }
+    } else {
+      return NextResponse.json(
+        { error: 'Date must be a string in YYYY-MM-DD format' },
+        { status: 400 }
+      );
+    }
     
     const newSession = await Session.create({
       campaignId,
@@ -100,7 +123,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Update all players' AND DM's availability to "Not available" for this date
-    const sessionDate = new Date(year, month - 1, day);
+    const sessionDate = new Date(pragueDate);
     sessionDate.setHours(0, 0, 0, 0);
 
     // Mark all players as not available for ALL their campaigns on this date

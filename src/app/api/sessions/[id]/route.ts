@@ -83,8 +83,16 @@ export async function PUT(
     if (name !== undefined) sessionDoc.name = name;
     if (date) {
       // Parse date as Prague local time (not UTC)
-      const [year, month, day] = date.split('-').map(Number);
-      sessionDoc.date = new Date(year, month - 1, day);
+      if (typeof date === 'string') {
+        const parts = date.split('-');
+        if (parts.length === 3) {
+          const [year, month, day] = parts.map(Number);
+          const parsedDate = new Date(year, month - 1, day);
+          if (!isNaN(parsedDate.getTime())) {
+            sessionDoc.date = parsedDate;
+          }
+        }
+      }
     }
     if (time) sessionDoc.time = time;
     if (location) sessionDoc.location = location;
