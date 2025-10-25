@@ -208,6 +208,7 @@ export default function CampaignDetailPage() {
               <AvailabilityGrid
                 campaign={campaign}
                 availabilities={availabilities}
+                sessions={sessions}
               />
             </div>
           </div>
@@ -232,9 +233,11 @@ export default function CampaignDetailPage() {
 function AvailabilityGrid({
   campaign,
   availabilities,
+  sessions,
 }: {
   campaign: Campaign;
   availabilities: AvailabilityRecord[];
+  sessions: Session[];
 }) {
   const [daysToShow, setDaysToShow] = useState(60); // Start with 60 days
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -253,6 +256,10 @@ function AvailabilityGrid({
   console.log('AvailabilityGrid - Sample availability:', availabilities[0]);
   console.log('AvailabilityGrid - Players:', campaign.playerIds.map(p => ({ id: p._id, name: p.username })));
 
+  // Check if there's a session on a specific date
+  const getSessionForDate = (date: Date) => {
+    return sessions.find((s) => isSameDay(parseISO(s.date), date));
+  };
   const getStatusForPlayerAndDate = (userId: string, date: Date) => {
     const avail = availabilities.find((a) => {
       const availUserId = typeof a.userId === 'object' ? a.userId._id : a.userId;
@@ -283,6 +290,11 @@ function AvailabilityGrid({
   };
 
   const handleDateClick = (date: Date) => {
+    // Don't allow scheduling if there's already a session
+    const existingSession = getSessionForDate(date);
+    if (existingSession) {
+      return; // Column is locked
+    }
     setSelectedDate(date);
     setShowScheduleModal(true);
   };
@@ -329,18 +341,35 @@ function AvailabilityGrid({
                 </th>
                 {futureDays.map((date) => {
                   const stats = getPlayersAvailableForDate(date);
+                  const session = getSessionForDate(date);
+                  const isLocked = !!session;
+                  
                   return (
                     <th
                       key={date.toISOString()}
                       onClick={() => handleDateClick(date)}
-                      className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-purple-50 transition"
-                      title={`Click to schedule session\n${stats.available} available, ${stats.maybe} maybe, ${stats.notAvailable} not available`}
+                      className={`px-2 py-2 text-center text-xs font-medium uppercase tracking-wider transition ${
+                        isLocked
+                          ? 'bg-purple-200 cursor-not-allowed'
+                          : 'text-gray-500 cursor-pointer hover:bg-purple-50'
+                      }`}
+                      title={
+                        isLocked
+                          ? `Session scheduled at ${session.time}\nLocation: ${session.location}`
+                          : `Click to schedule session\n${stats.available} available, ${stats.maybe} maybe, ${stats.notAvailable} not available`
+                      }
                     >
                       <div>{format(date, 'EEE')}</div>
                       <div className="font-bold">{format(date, 'M/d')}</div>
-                      <div className="text-[10px] text-green-600 font-semibold">
-                        {stats.available}/{stats.total} ✓
-                      </div>
+                      {isLocked ? (
+                        <div className="text-[10px] text-purple-800 font-bold">
+                          🎲 {session.time}
+                        </div>
+                      ) : (
+                        <div className="text-[10px] text-green-600 font-semibold">
+                          {stats.available}/{stats.total} ✓
+                        </div>
+                      )}
                     </th>
                   );
                 })}
@@ -354,18 +383,27 @@ function AvailabilityGrid({
                   </td>
                   {futureDays.map((date) => {
                     const status = getStatusForPlayerAndDate(player._id, date);
+                    const session = getSessionForDate(date);
+                    const isLocked = !!session;
+                    
                     return (
                       <td 
                         key={date.toISOString()} 
-                        className="px-2 py-2 cursor-pointer hover:ring-2 hover:ring-purple-400 hover:ring-inset transition"
+                        className={`px-2 py-2 transition ${
+                          isLocked
+                            ? 'bg-purple-100 cursor-not-allowed'
+                            : 'cursor-pointer hover:ring-2 hover:ring-purple-400 hover:ring-inset'
+                        }`}
                         onClick={() => handleDateClick(date)}
                       >
                         <div
                           className={`text-xs px-2 py-1 rounded text-center ${
-                            statusColors[status as keyof typeof statusColors]
+                            isLocked
+                              ? 'bg-purple-300 text-purple-900 font-bold'
+                              : statusColors[status as keyof typeof statusColors]
                           }`}
                         >
-                          {status === 'Sure' ? '✓' : status === 'Maybe' ? '?' : status === 'Not available' ? '✗' : '−'}
+                          {isLocked ? '🎲' : status === 'Sure' ? '✓' : status === 'Maybe' ? '?' : status === 'Not available' ? '✗' : '−'}
                         </div>
                       </td>
                     );
@@ -378,6 +416,7 @@ function AvailabilityGrid({
 
         <div className="text-xs text-gray-500 bg-blue-50 border border-blue-200 rounded p-3">
           💡 <strong>Tip:</strong> Click on any date column header or cell to schedule a session for that day.
+          <strong className="text-purple-600"> Purple columns with 🎲</strong> indicate scheduled sessions (locked).
           The green numbers show how many players confirmed they&apos;re available.
         </div>
       </div>

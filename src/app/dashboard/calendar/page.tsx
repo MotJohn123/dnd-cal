@@ -23,12 +23,21 @@ interface Campaign {
   availableDays: string[];
 }
 
+interface Session {
+  _id: string;
+  campaignId: { _id: string; name: string };
+  date: string;
+  time: string;
+  location: string;
+}
+
 export default function CalendarPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [availability, setAvailability] = useState<Availability[]>([]);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -48,9 +57,10 @@ export default function CalendarPage() {
       const start = startOfMonth(currentMonth);
       const end = endOfMonth(currentMonth);
 
-      const [availRes, campaignsRes] = await Promise.all([
+      const [availRes, campaignsRes, sessionsRes] = await Promise.all([
         fetch(`/api/availability?startDate=${start.toISOString()}&endDate=${end.toISOString()}`),
         fetch('/api/campaigns'),
+        fetch('/api/sessions'),
       ]);
 
       if (availRes.ok) {
@@ -65,6 +75,11 @@ export default function CalendarPage() {
           c.dmId._id !== session?.user?.id
         );
         setCampaigns(playerCampaigns);
+      }
+
+      if (sessionsRes.ok) {
+        const data = await sessionsRes.json();
+        setSessions(data.sessions || []);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -95,6 +110,10 @@ export default function CalendarPage() {
   const getCampaignsForDay = (date: Date): Campaign[] => {
     const dayName = format(date, 'EEEE');
     return campaigns.filter((c) => c.availableDays.includes(dayName));
+  };
+
+  const getSessionsForDate = (date: Date): Session[] => {
+    return sessions.filter((s) => isSameDay(new Date(s.date), date));
   };
 
   const getAvailabilityForDate = (date: Date): AvailabilityStatus => {
@@ -145,20 +164,51 @@ export default function CalendarPage() {
           const status = getAvailabilityForDate(day);
           const isPast = day < new Date(new Date().setHours(0, 0, 0, 0));
           const dayCampaigns = getCampaignsForDay(day);
+          const daySessions = getSessionsForDate(day);
           const hasCampaigns = dayCampaigns.length > 0;
-          const canEdit = !isPast && hasCampaigns;
+          const hasSessions = daySessions.length > 0;
+          const canEdit = !isPast && hasCampaigns && !hasSessions;
 
           return (
             <div key={day.toISOString()} className="aspect-square">
-              <div className={`h-full flex flex-col p-1 border-2 rounded ${hasCampaigns ? 'border-purple-400 bg-purple-50' : 'border-gray-200 bg-gray-50'}`}>
+              <div className={`h-full flex flex-col p-1 border-2 rounded ${
+                hasSessions 
+                  ? 'border-purple-600 bg-purple-200' 
+                  : hasCampaigns 
+                  ? 'border-purple-400 bg-purple-50' 
+                  : 'border-gray-200 bg-gray-50'
+              }`}>
                 <div className="text-sm text-gray-600 text-center mb-1 flex items-center justify-center gap-1">
                   {format(day, 'd')}
-                  {hasCampaigns && (
+                  {hasCampaigns && !hasSessions && (
                     <span className="text-xs text-purple-600 font-bold" title={dayCampaigns.map(c => c.name).join(', ')}>
                       ({dayCampaigns.length})
                     </span>
                   )}
+                  {hasSessions && (
+                    <span className="text-xs text-purple-900 font-bold" title={daySessions.map(s => `${s.campaignId.name} at ${s.time}`).join('\n')}>
+                      🎲
+                    </span>
+                  )}
                 </div>
+                
+                {/* Show sessions */}
+                {hasSessions && (
+                  <div className="flex-1 overflow-y-auto space-y-1">
+                    {daySessions.map((session) => (
+                      <div
+                        key={session._id}
+                        className="bg-purple-600 text-white text-[10px] px-1 py-0.5 rounded"
+                        title={`${session.campaignId.name}\n${session.time}\n${session.location}`}
+                      >
+                        <div className="font-bold truncate">{session.campaignId.name}</div>
+                        <div>{session.time}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Edit availability */}
                 {canEdit && (
                   <select
                     value={status}
@@ -171,12 +221,16 @@ export default function CalendarPage() {
                     <option value="Not available">✗</option>
                   </select>
                 )}
-                {isPast && (
+                
+                {/* Past days */}
+                {isPast && !hasSessions && (
                   <div className="flex-1 bg-gray-100 rounded flex items-center justify-center text-xs text-gray-400">
                     Past
                   </div>
                 )}
-                {!isPast && !hasCampaigns && (
+                
+                {/* Non-campaign days */}
+                {!isPast && !hasCampaigns && !hasSessions && (
                   <div className="flex-1 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-500">
                     −
                   </div>
@@ -236,6 +290,10 @@ export default function CalendarPage() {
           {/* Legend */}
           <div className="flex flex-wrap gap-4 mb-6 pb-6 border-b">
             <div className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-purple-200 border-2 border-purple-600 rounded"></div>
+              <span className="text-sm text-gray-700"><strong>Session Scheduled 🎲</strong></span>
+            </div>
+            <div className="flex items-center gap-2">
               <div className="w-6 h-6 bg-green-500 rounded"></div>
               <span className="text-sm text-gray-700">Sure (✓)</span>
             </div>
@@ -259,9 +317,15 @@ export default function CalendarPage() {
           {/* Info */}
           <div className="mt-6 pt-6 border-t space-y-3">
             <div className="flex items-start gap-2">
+              <div className="w-6 h-6 border-2 border-purple-600 bg-purple-200 rounded flex-shrink-0"></div>
+              <p className="text-sm text-gray-600">
+                <strong>Dark purple days with 🎲</strong> show scheduled sessions. Hover to see campaign name, time, and location. You cannot edit availability on session days.
+              </p>
+            </div>
+            <div className="flex items-start gap-2">
               <div className="w-6 h-6 border-2 border-purple-400 bg-purple-50 rounded flex-shrink-0"></div>
               <p className="text-sm text-gray-600">
-                <strong>Purple bordered days</strong> are campaign days where you can set your availability. The number shows how many campaigns have sessions on that day of the week.
+                <strong>Light purple bordered days</strong> are campaign days where you can set your availability. The number shows how many campaigns have sessions on that day of the week.
               </p>
             </div>
             <div className="flex items-start gap-2">
@@ -271,8 +335,7 @@ export default function CalendarPage() {
               </p>
             </div>
             <p className="text-sm text-gray-600">
-              💡 <strong>Tip:</strong> Your availability is shared across all campaigns where you&apos;re a player. 
-              DMs don&apos;t need to set availability for their own campaigns. Only set availability for purple bordered days!
+              💡 <strong>Tip:</strong> When a session is scheduled, that day is automatically marked as &quot;Not available&quot; for all your other campaigns!
             </p>
           </div>
         </div>

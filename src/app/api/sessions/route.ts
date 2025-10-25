@@ -92,10 +92,11 @@ export async function POST(req: NextRequest) {
       confirmedPlayerIds: players.map((p) => p._id),
     });
 
-    // Update all players' availability to "Not available" for this date
+    // Update all players' AND DM's availability to "Not available" for this date
     const sessionDate = new Date(date);
     sessionDate.setHours(0, 0, 0, 0);
 
+    // Mark all players as not available for ALL their campaigns on this date
     for (const player of players) {
       await Availability.findOneAndUpdate(
         { userId: player._id, date: sessionDate },
@@ -103,6 +104,13 @@ export async function POST(req: NextRequest) {
         { upsert: true }
       );
     }
+
+    // Also mark DM as not available for all their campaigns on this date
+    await Availability.findOneAndUpdate(
+      { userId: campaign.dmId, date: sessionDate },
+      { status: 'Not available' },
+      { upsert: true }
+    );
 
     // Create Google Calendar event (if configured)
     try {
