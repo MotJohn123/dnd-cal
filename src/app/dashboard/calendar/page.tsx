@@ -146,10 +146,10 @@ export default function CalendarPage() {
     const emptyCells = Array(startDay === 0 ? 6 : startDay - 1).fill(null);
 
     return (
-      <div className="grid grid-cols-7 gap-2">
+      <div className="grid grid-cols-7 gap-1 sm:gap-2">
         {/* Day headers */}
         {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
-          <div key={day} className="text-center font-semibold text-gray-700 py-2">
+          <div key={day} className="text-center font-semibold text-xs sm:text-sm text-gray-700 py-1 sm:py-2">
             {day}
           </div>
         ))}
@@ -171,22 +171,22 @@ export default function CalendarPage() {
 
           return (
             <div key={day.toISOString()} className="aspect-square">
-              <div className={`h-full flex flex-col p-1 border-2 rounded ${
+              <div className={`h-full flex flex-col p-0.5 sm:p-1 border rounded sm:border-2 text-xs sm:text-sm ${
                 hasSessions 
                   ? 'border-purple-600 bg-purple-200' 
                   : hasCampaigns 
                   ? 'border-purple-400 bg-purple-50' 
                   : 'border-gray-200 bg-gray-50'
               }`}>
-                <div className="text-sm text-gray-600 text-center mb-1 flex items-center justify-center gap-1">
+                <div className="text-xs sm:text-sm text-gray-600 text-center mb-0.5 sm:mb-1 flex items-center justify-center gap-0.5 sm:gap-1">
                   {format(day, 'd')}
                   {hasCampaigns && !hasSessions && (
-                    <span className="text-xs text-purple-600 font-bold" title={dayCampaigns.map(c => c.name).join(', ')}>
+                    <span className="text-[9px] sm:text-xs text-purple-600 font-bold" title={dayCampaigns.map(c => c.name).join(', ')}>
                       ({dayCampaigns.length})
                     </span>
                   )}
                   {hasSessions && (
-                    <span className="text-xs text-purple-900 font-bold" title={daySessions.map(s => `${s.campaignId.name} at ${s.time}`).join('\n')}>
+                    <span className="text-[9px] sm:text-xs text-purple-900 font-bold" title={daySessions.map(s => `${s.campaignId.name} at ${s.time}`).join('\n')}>
                       🎲
                     </span>
                   )}
@@ -194,15 +194,15 @@ export default function CalendarPage() {
                 
                 {/* Show sessions */}
                 {hasSessions && (
-                  <div className="flex-1 overflow-y-auto space-y-1">
+                  <div className="flex-1 overflow-y-auto space-y-0.5 sm:space-y-1">
                     {daySessions.map((session) => (
                       <div
                         key={session._id}
-                        className="bg-purple-600 text-white text-[10px] px-1 py-0.5 rounded"
+                        className="bg-purple-600 text-white text-[8px] sm:text-[10px] px-0.5 sm:px-1 py-0.5 rounded"
                         title={`${session.campaignId.name}\n${session.time}\n${session.location}`}
                       >
                         <div className="font-bold truncate">{session.campaignId.name}</div>
-                        <div>{session.time}</div>
+                        <div className="hidden sm:block">{session.time}</div>
                       </div>
                     ))}
                   </div>
@@ -213,7 +213,7 @@ export default function CalendarPage() {
                   <select
                     value={status}
                     onChange={(e) => setDayAvailability(day, e.target.value as AvailabilityStatus)}
-                    className={`flex-1 text-xs rounded border-0 text-white text-center cursor-pointer ${getStatusColor(status)}`}
+                    className={`flex-1 text-xs sm:text-sm rounded border-0 text-white text-center cursor-pointer ${getStatusColor(status)}`}
                   >
                     <option value="Don't know">?</option>
                     <option value="Sure">✓</option>
@@ -224,14 +224,14 @@ export default function CalendarPage() {
                 
                 {/* Past days */}
                 {isPast && !hasSessions && (
-                  <div className="flex-1 bg-gray-100 rounded flex items-center justify-center text-xs text-gray-400">
+                  <div className="flex-1 bg-gray-100 rounded flex items-center justify-center text-[9px] sm:text-xs text-gray-400">
                     Past
                   </div>
                 )}
                 
                 {/* Non-campaign days */}
                 {!isPast && !hasCampaigns && !hasSessions && (
-                  <div className="flex-1 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-500">
+                  <div className="flex-1 bg-gray-200 rounded flex items-center justify-center text-[9px] sm:text-xs text-gray-500">
                     −
                   </div>
                 )}
@@ -266,48 +266,48 @@ export default function CalendarPage() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow p-6">
+      <main className="max-w-6xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
+        <div className="bg-white rounded-lg shadow p-3 sm:p-6">
           {/* Month Navigation */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
             <button
               onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
               className="p-2 hover:bg-gray-100 rounded-full transition"
             >
-              <ChevronLeft className="w-6 h-6 text-gray-600" />
+              <ChevronLeft className="w-5 sm:w-6 h-5 sm:h-6 text-gray-600" />
             </button>
-            <h2 className="text-xl font-semibold text-gray-900">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
               {format(currentMonth, 'MMMM yyyy')}
             </h2>
             <button
               onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
               className="p-2 hover:bg-gray-100 rounded-full transition"
             >
-              <ChevronRight className="w-6 h-6 text-gray-600" />
+              <ChevronRight className="w-5 sm:w-6 h-5 sm:h-6 text-gray-600" />
             </button>
           </div>
 
           {/* Legend */}
-          <div className="flex flex-wrap gap-4 mb-6 pb-6 border-b">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-purple-200 border-2 border-purple-600 rounded"></div>
-              <span className="text-sm text-gray-700"><strong>Session Scheduled 🎲</strong></span>
+          <div className="flex flex-wrap gap-2 sm:gap-4 mb-4 sm:mb-6 pb-4 sm:pb-6 border-b">
+            <div className="flex items-center gap-1 sm:gap-2">
+              <div className="w-4 sm:w-6 h-4 sm:h-6 bg-purple-200 border-2 border-purple-600 rounded"></div>
+              <span className="text-xs sm:text-sm text-gray-700"><strong>Session 🎲</strong></span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-green-500 rounded"></div>
-              <span className="text-sm text-gray-700">Sure (✓)</span>
+            <div className="flex items-center gap-1 sm:gap-2">
+              <div className="w-4 sm:w-6 h-4 sm:h-6 bg-green-500 rounded"></div>
+              <span className="text-xs sm:text-sm text-gray-700">Sure (✓)</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-yellow-500 rounded"></div>
-              <span className="text-sm text-gray-700">Maybe (~)</span>
+            <div className="flex items-center gap-1 sm:gap-2">
+              <div className="w-4 sm:w-6 h-4 sm:h-6 bg-yellow-500 rounded"></div>
+              <span className="text-xs sm:text-sm text-gray-700">Maybe (~)</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-red-500 rounded"></div>
-              <span className="text-sm text-gray-700">Not available (✗)</span>
+            <div className="flex items-center gap-1 sm:gap-2">
+              <div className="w-4 sm:w-6 h-4 sm:h-6 bg-red-500 rounded"></div>
+              <span className="text-xs sm:text-sm text-gray-700">Not (✗)</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-gray-300 rounded"></div>
-              <span className="text-sm text-gray-700">Don&apos;t know (?)</span>
+            <div className="flex items-center gap-1 sm:gap-2">
+              <div className="w-4 sm:w-6 h-4 sm:h-6 bg-gray-300 rounded"></div>
+              <span className="text-xs sm:text-sm text-gray-700">? (?)</span>
             </div>
           </div>
 
