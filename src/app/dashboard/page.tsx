@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Calendar, Users, LogOut, Check, X } from 'lucide-react';
 import { signOut } from 'next-auth/react';
-import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, getDay } from 'date-fns';
+import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, getDay, isBefore, isToday, startOfDay } from 'date-fns';
 
 interface Session {
   _id: string;
@@ -204,17 +204,21 @@ export default function DashboardPage() {
                     const daySessions = getSessionsForDay(day);
                     const hasSession = daySessions.length > 0;
                     const isCurrentMonth = day.getMonth() === currentMonth.getMonth();
+                    const isToday_flag = isToday(day);
+                    const isPast = isBefore(startOfDay(day), startOfDay(new Date())) && !isToday_flag;
                     
                     return (
                       <div
                         key={idx}
                         className={`
-                          aspect-square p-1 border border-gray-200 rounded
-                          ${hasSession ? 'bg-purple-50 border-purple-300' : 'bg-white'}
-                          ${!isCurrentMonth ? 'opacity-40' : ''}
+                          aspect-square p-1 border rounded
+                          ${isToday_flag ? 'border-2 border-blue-500 bg-blue-50 font-bold' : 'border-gray-200'}
+                          ${hasSession && !isPast ? 'bg-purple-50 border-purple-300' : ''}
+                          ${isPast ? 'bg-gray-100 opacity-50' : ''}
+                          ${!isCurrentMonth ? 'opacity-30' : ''}
                         `}
                       >
-                        <div className="text-xs font-medium text-gray-700">
+                        <div className={`text-xs font-medium ${isToday_flag ? 'text-blue-600' : isPast ? 'text-gray-500' : 'text-gray-700'}`}>
                           {format(day, 'd')}
                         </div>
                         {hasSession && (
@@ -228,14 +232,14 @@ export default function DashboardPage() {
                                 .toUpperCase()
                                 .slice(0, 2);
                               return (
-                                <div key={idx} className="text-xs font-semibold text-purple-700 truncate flex items-center gap-0.5">
+                                <div key={idx} className={`text-xs font-semibold truncate flex items-center gap-0.5 ${isPast ? 'text-gray-500' : 'text-purple-700'}`}>
                                   <span className="text-sm">{emoji}</span>
                                   <span className="truncate">{initials}</span>
                                 </div>
                               );
                             })}
                             {daySessions.length > 2 && (
-                              <div className="text-xs font-semibold text-purple-600">
+                              <div className={`text-xs font-semibold ${isPast ? 'text-gray-500' : 'text-purple-600'}`}>
                                 +{daySessions.length - 2} more
                               </div>
                             )}
