@@ -436,10 +436,6 @@ function AvailabilityGrid({
     return isRegularDay || isUniqueDate;
   });
 
-  console.log('AvailabilityGrid - Total availabilities:', availabilities.length);
-  console.log('AvailabilityGrid - Sample availability:', availabilities[0]);
-  console.log('AvailabilityGrid - Players:', campaign.playerIds.map(p => ({ id: p._id, name: p.username })));
-
   // Check if there's a session on a specific date
   const getSessionForDate = (date: Date) => {
     return sessions.find((s) => isSameDay(parseISO(s.date), date));
@@ -461,10 +457,17 @@ function AvailabilityGrid({
       return 'Not available';
     }
     
+    // Convert target date to yyyy-MM-dd string
+    const targetDateStr = format(date, 'yyyy-MM-dd');
+    
     // Otherwise return their explicitly set availability
     const avail = availabilities.find((a) => {
       const availUserId = typeof a.userId === 'object' ? a.userId._id : a.userId;
-      return availUserId === userId && isSameDay(parseISO(a.date), date);
+      if (availUserId !== userId) return false;
+      
+      // Extract just the date part from ISO string: "2025-10-28T23:00:00.000Z" -> "2025-10-28"
+      const availDateStr = a.date.split('T')[0];
+      return availDateStr === targetDateStr;
     });
     return avail?.status || "Don't know";
   };

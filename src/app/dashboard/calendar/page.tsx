@@ -143,10 +143,6 @@ export default function CalendarPage() {
           return d === dateString || format(new Date(d), 'yyyy-MM-dd') === dateString;
         });
       
-      if (isUniqueDate) {
-        console.log(`Date ${dateString} is unique date for campaign ${c.name}`, c.uniqueDates);
-      }
-      
       return isRegularDay || isUniqueDate;
     });
     
@@ -164,10 +160,15 @@ export default function CalendarPage() {
       return 'Not available';
     }
     
+    // Convert target date to yyyy-MM-dd string
+    const targetDateStr = format(date, 'yyyy-MM-dd');
+    
     // Otherwise return the user's explicitly set availability
-    const avail = availability.find((a) =>
-      isSameDay(new Date(a.date), date)
-    );
+    const avail = availability.find((a) => {
+      // Extract just the date part from ISO string: "2025-10-28T23:00:00.000Z" -> "2025-10-28"
+      const availDateStr = a.date.split('T')[0];
+      return availDateStr === targetDateStr;
+    });
     return avail?.status || "Don't know";
   };
 
