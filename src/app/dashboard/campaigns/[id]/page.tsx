@@ -41,6 +41,7 @@ export default function CampaignDetailPage() {
   const params = useParams();
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [allSessions, setAllSessions] = useState<Session[]>([]); // All sessions for conflict detection
   const [availabilities, setAvailabilities] = useState<AvailabilityRecord[]>([]);
   const [uniqueDates, setUniqueDates] = useState<Date[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,9 +68,10 @@ export default function CampaignDetailPage() {
       const today = new Date();
       const next30Days = addDays(today, 30);
       
-      const [campaignRes, sessionsRes, availRes, uniqueDatesRes] = await Promise.all([
+      const [campaignRes, sessionsRes, allSessionsRes, availRes, uniqueDatesRes] = await Promise.all([
         fetch(`/api/campaigns/${params.id}`),
         fetch(`/api/sessions?campaignId=${params.id}`),
+        fetch(`/api/sessions`), // Fetch ALL sessions to check conflicts across campaigns
         fetch(`/api/availability/campaign/${params.id}?startDate=${today.toISOString()}&endDate=${next30Days.toISOString()}`),
         fetch(`/api/campaigns/${params.id}/unique-dates`),
       ]);
@@ -82,6 +84,12 @@ export default function CampaignDetailPage() {
       if (sessionsRes.ok) {
         const sessionsData = await sessionsRes.json();
         setSessions(sessionsData.sessions);
+      }
+      
+      // Store all sessions (for conflict detection in AvailabilityGrid)
+      if (allSessionsRes.ok) {
+        const allSessionsData = await allSessionsRes.json();
+        setAllSessions(allSessionsData.sessions);
       }
 
       if (availRes.ok) {
@@ -333,7 +341,7 @@ export default function CampaignDetailPage() {
               <AvailabilityGrid
                 campaign={campaign}
                 availabilities={availabilities}
-                sessions={sessions}
+                sessions={allSessions}
                 uniqueDates={uniqueDates}
               />
             </div>

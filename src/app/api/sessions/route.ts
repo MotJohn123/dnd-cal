@@ -29,8 +29,16 @@ export async function GET(req: NextRequest) {
     });
 
     const campaignIds = campaigns.map((c) => c._id);
+    
+    // Optional: filter by specific campaign if provided
+    const campaignIdParam = req.nextUrl.searchParams.get('campaignId');
+    let sessionQuery: any = { campaignId: { $in: campaignIds } };
+    
+    if (campaignIdParam) {
+      sessionQuery = { campaignId: campaignIdParam };
+    }
 
-    const sessions = await Session.find({ campaignId: { $in: campaignIds } })
+    const sessions = await Session.find(sessionQuery)
       .populate('campaignId', 'name dmId emoji')
       .populate('confirmedPlayerIds', 'username email')
       .sort({ date: 1 });
