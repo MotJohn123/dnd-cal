@@ -343,6 +343,7 @@ export default function CampaignDetailPage() {
       {showScheduleModal && (
         <ScheduleSessionModal
           campaign={campaign}
+          uniqueDates={uniqueDates}
           onClose={() => setShowScheduleModal(false)}
           onSuccess={() => {
             setShowScheduleModal(false);
@@ -737,10 +738,12 @@ function QuickScheduleModal({
 
 function ScheduleSessionModal({
   campaign,
+  uniqueDates,
   onClose,
   onSuccess,
 }: {
   campaign: Campaign;
+  uniqueDates: Date[];
   onClose: () => void;
   onSuccess: () => void;
 }) {
@@ -748,6 +751,30 @@ function ScheduleSessionModal({
   const [time, setTime] = useState('');
   const [location, setLocation] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [availableDates, setAvailableDates] = useState<Date[]>([]);
+
+  useEffect(() => {
+    // Compute available dates from next 30 days
+    const today = new Date(new Date().setHours(0, 0, 0, 0));
+    const dates: Date[] = [];
+    
+    for (let i = 0; i < 30; i++) {
+      const currentDate = addDays(today, i);
+      const dayName = format(currentDate, 'EEEE');
+      const dateString = format(currentDate, 'yyyy-MM-dd');
+      
+      // Check if this date is available (either in availableDays or uniqueDates)
+      const isAvailable = 
+        campaign.availableDays.includes(dayName) || 
+        uniqueDates.some(d => format(d, 'yyyy-MM-dd') === dateString);
+      
+      if (isAvailable) {
+        dates.push(currentDate);
+      }
+    }
+    
+    setAvailableDates(dates);
+  }, [campaign, uniqueDates]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -788,15 +815,24 @@ function ScheduleSessionModal({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Date
+              Date (Available Campaign Days)
             </label>
-            <input
-              type="date"
+            <select
               value={date}
               onChange={(e) => setDate(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-600"
               required
-            />
+            >
+              <option value="">Select a date...</option>
+              {availableDates.map((d) => (
+                <option key={format(d, 'yyyy-MM-dd')} value={format(d, 'yyyy-MM-dd')}>
+                  {format(d, 'EEE, dd/MM/yyyy')}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              Shows next 30 days of campaign schedule + special dates
+            </p>
           </div>
 
           <div>

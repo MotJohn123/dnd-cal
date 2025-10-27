@@ -21,6 +21,7 @@ interface Campaign {
   dmId: { _id: string };
   playerIds: { _id: string }[];
   availableDays: string[];
+  uniqueDates?: string[];
 }
 
 interface Session {
@@ -109,7 +110,10 @@ export default function CalendarPage() {
 
   const getCampaignsForDay = (date: Date): Campaign[] => {
     const dayName = format(date, 'EEEE');
-    return campaigns.filter((c) => c.availableDays.includes(dayName));
+    const dateString = format(date, 'yyyy-MM-dd');
+    return campaigns.filter((c) => 
+      c.availableDays.includes(dayName) || (c.uniqueDates?.includes(dateString))
+    );
   };
 
   const getSessionsForDate = (date: Date): Session[] => {
