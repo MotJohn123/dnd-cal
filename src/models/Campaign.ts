@@ -49,7 +49,7 @@ const CampaignSchema = new Schema<ICampaign>(
     emoji: {
       type: String,
       default: '🎲',
-      maxlength: [2, 'Emoji must be a single character'],
+      maxlength: [20, 'Emoji cannot exceed 20 characters'],
     },
   },
   {

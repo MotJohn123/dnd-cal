@@ -158,6 +158,13 @@ export default function CalendarPage() {
   };
 
   const getAvailabilityForDate = (date: Date): AvailabilityStatus => {
+    // Check if user has a session scheduled on this date (any campaign)
+    const sessionsOnDate = getSessionsForDate(date);
+    if (sessionsOnDate.length > 0) {
+      return 'Not available';
+    }
+    
+    // Otherwise return the user's explicitly set availability
     const avail = availability.find((a) =>
       isSameDay(new Date(a.date), date)
     );
