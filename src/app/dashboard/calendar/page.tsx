@@ -75,6 +75,11 @@ export default function CalendarPage() {
         const playerCampaigns = data.campaigns.filter((c: Campaign) => 
           c.dmId._id !== session?.user?.id
         );
+        console.log('Fetched player campaigns:', playerCampaigns.map((c: Campaign) => ({
+          name: c.name,
+          availableDays: c.availableDays,
+          uniqueDates: c.uniqueDates
+        })));
         setCampaigns(playerCampaigns);
       }
 
@@ -111,9 +116,26 @@ export default function CalendarPage() {
   const getCampaignsForDay = (date: Date): Campaign[] => {
     const dayName = format(date, 'EEEE');
     const dateString = format(date, 'yyyy-MM-dd');
-    return campaigns.filter((c) => 
-      c.availableDays.includes(dayName) || (c.uniqueDates?.includes(dateString))
-    );
+    
+    const result = campaigns.filter((c) => {
+      // Check if this day is part of regular campaign schedule
+      const isRegularDay = c.availableDays.includes(dayName);
+      
+      // Check if this date is a unique date
+      const isUniqueDate = c.uniqueDates && c.uniqueDates.length > 0 && 
+        c.uniqueDates.some(d => {
+          const uniqueDateString = format(new Date(d), 'yyyy-MM-dd');
+          return uniqueDateString === dateString;
+        });
+      
+      if (isUniqueDate) {
+        console.log(`Date ${dateString} is unique date for campaign ${c.name}`);
+      }
+      
+      return isRegularDay || isUniqueDate;
+    });
+    
+    return result;
   };
 
   const getSessionsForDate = (date: Date): Session[] => {
