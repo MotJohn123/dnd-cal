@@ -89,11 +89,6 @@ export default function CalendarPage() {
           }) || []
         }));
         
-        console.log('Fetched player campaigns:', transformedCampaigns.map((c: Campaign) => ({
-          name: c.name,
-          availableDays: c.availableDays,
-          uniqueDates: c.uniqueDates
-        })));
         setCampaigns(transformedCampaigns);
       }
 
