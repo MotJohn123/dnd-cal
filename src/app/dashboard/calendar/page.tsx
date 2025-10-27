@@ -21,7 +21,7 @@ interface Campaign {
   dmId: { _id: string };
   playerIds: { _id: string }[];
   availableDays: string[];
-  uniqueDates?: string[];
+  uniqueDates: string[];
 }
 
 interface Session {
@@ -75,12 +75,26 @@ export default function CalendarPage() {
         const playerCampaigns = data.campaigns.filter((c: Campaign) => 
           c.dmId._id !== session?.user?.id
         );
-        console.log('Fetched player campaigns:', playerCampaigns.map((c: Campaign) => ({
+        
+        // Transform uniqueDates from ISO strings to yyyy-MM-dd format
+        const transformedCampaigns = playerCampaigns.map((c: Campaign) => ({
+          ...c,
+          uniqueDates: c.uniqueDates?.map((d: string) => {
+            // If it's an ISO string like "2025-11-15T00:00:00.000Z", extract just the date
+            if (d.includes('T')) {
+              return d.split('T')[0];
+            }
+            // Otherwise it's already in yyyy-MM-dd format
+            return d;
+          }) || []
+        }));
+        
+        console.log('Fetched player campaigns:', transformedCampaigns.map((c: Campaign) => ({
           name: c.name,
           availableDays: c.availableDays,
           uniqueDates: c.uniqueDates
         })));
-        setCampaigns(playerCampaigns);
+        setCampaigns(transformedCampaigns);
       }
 
       if (sessionsRes.ok) {
