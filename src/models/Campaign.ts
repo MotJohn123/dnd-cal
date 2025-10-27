@@ -5,6 +5,7 @@ export interface ICampaign extends Document {
   dmId: mongoose.Types.ObjectId;
   playerIds: mongoose.Types.ObjectId[];
   availableDays: ('Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday')[];
+  uniqueDates: Date[];
   description?: string;
   emoji?: string;
   createdAt: Date;
@@ -34,6 +35,11 @@ const CampaignSchema = new Schema<ICampaign>(
       {
         type: String,
         enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+      },
+    ],
+    uniqueDates: [
+      {
+        type: Date,
       },
     ],
     description: {
