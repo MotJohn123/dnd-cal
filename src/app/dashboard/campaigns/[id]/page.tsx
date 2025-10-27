@@ -444,7 +444,24 @@ function AvailabilityGrid({
   const getSessionForDate = (date: Date) => {
     return sessions.find((s) => isSameDay(parseISO(s.date), date));
   };
+  
+  const getSessionForPlayerOnDate = (userId: string, date: Date) => {
+    return sessions.find((s) => {
+      const confirmedIds = s.confirmedPlayerIds.map((p: any) => 
+        typeof p === 'object' ? p._id : p
+      );
+      return confirmedIds.includes(userId) && isSameDay(parseISO(s.date), date);
+    });
+  };
+  
   const getStatusForPlayerAndDate = (userId: string, date: Date) => {
+    // If player has a session on this date (any campaign), they're not available
+    const playerSession = getSessionForPlayerOnDate(userId, date);
+    if (playerSession) {
+      return 'Not available';
+    }
+    
+    // Otherwise return their explicitly set availability
     const avail = availabilities.find((a) => {
       const availUserId = typeof a.userId === 'object' ? a.userId._id : a.userId;
       return availUserId === userId && isSameDay(parseISO(a.date), date);
