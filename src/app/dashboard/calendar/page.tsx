@@ -122,14 +122,15 @@ export default function CalendarPage() {
       const isRegularDay = c.availableDays.includes(dayName);
       
       // Check if this date is a unique date
+      // uniqueDates come from API as strings in 'yyyy-MM-dd' format
       const isUniqueDate = c.uniqueDates && c.uniqueDates.length > 0 && 
         c.uniqueDates.some(d => {
-          const uniqueDateString = format(new Date(d), 'yyyy-MM-dd');
-          return uniqueDateString === dateString;
+          // d is already a string like "2025-11-15"
+          return d === dateString || format(new Date(d), 'yyyy-MM-dd') === dateString;
         });
       
       if (isUniqueDate) {
-        console.log(`Date ${dateString} is unique date for campaign ${c.name}`);
+        console.log(`Date ${dateString} is unique date for campaign ${c.name}`, c.uniqueDates);
       }
       
       return isRegularDay || isUniqueDate;
