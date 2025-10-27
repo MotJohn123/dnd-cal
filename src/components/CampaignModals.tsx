@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { X, UserPlus, UserMinus } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { X, UserPlus, UserMinus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { format, parseISO, addMonths, subMonths, getDaysInMonth, startOfMonth, getDay } from 'date-fns';
 
 interface User {
   _id: string;
@@ -461,6 +461,185 @@ export function EditSessionModal({
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+}
+
+export function UniqueDatesModal({
+  campaignId,
+  onClose,
+  onSuccess,
+}: {
+  campaignId: string;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  const daysInMonth = getDaysInMonth(currentMonth);
+  const firstDayOfMonth = getDay(startOfMonth(currentMonth));
+  
+  const days = [];
+  for (let i = 0; i < firstDayOfMonth; i++) {
+    days.push(null);
+  }
+  for (let i = 1; i <= daysInMonth; i++) {
+    days.push(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), i));
+  }
+
+  const handleDateSelect = (date: Date) => {
+    setSelectedDate(date);
+    setError('');
+  };
+
+  const handleSubmit = async () => {
+    if (!selectedDate) {
+      setError('Please select a date');
+      return;
+    }
+
+    setSubmitting(true);
+    setError('');
+
+    try {
+      const response = await fetch(`/api/campaigns/${campaignId}/unique-dates`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          date: format(selectedDate, 'yyyy-MM-dd'),
+        }),
+      });
+
+      if (response.ok) {
+        onSuccess();
+      } else {
+        const data = await response.json();
+        setError(data.error || 'Failed to add date');
+      }
+    } catch (err) {
+      console.error('Error adding unique date:', err);
+      setError('Failed to add date');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const monthYear = format(currentMonth, 'MMMM yyyy');
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg max-w-sm w-full p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-bold text-gray-900">Add Special Date</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          {/* Month Navigation */}
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+              className="p-2 hover:bg-gray-100 rounded-md transition"
+            >
+              <ChevronLeft className="w-5 h-5 text-gray-600" />
+            </button>
+            <h3 className="text-lg font-semibold text-gray-900">{monthYear}</h3>
+            <button
+              type="button"
+              onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+              className="p-2 hover:bg-gray-100 rounded-md transition"
+            >
+              <ChevronRight className="w-5 h-5 text-gray-600" />
+            </button>
+          </div>
+
+          {/* Day Labels */}
+          <div className="grid grid-cols-7 gap-1">
+            {dayLabels.map((label) => (
+              <div key={label} className="text-center text-xs font-semibold text-gray-600 py-2">
+                {label}
+              </div>
+            ))}
+          </div>
+
+          {/* Calendar Grid */}
+          <div className="grid grid-cols-7 gap-1">
+            {days.map((date, index) => {
+              if (date === null) {
+                return (
+                  <div key={`empty-${index}`} className="aspect-square" />
+                );
+              }
+
+              const isSelected = selectedDate && 
+                format(selectedDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd');
+              const isToday = format(date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
+
+              return (
+                <button
+                  key={format(date, 'yyyy-MM-dd')}
+                  type="button"
+                  onClick={() => handleDateSelect(date)}
+                  className={`
+                    aspect-square flex items-center justify-center rounded-md text-sm font-medium transition
+                    ${isSelected
+                      ? 'bg-purple-600 text-white'
+                      : isToday
+                      ? 'bg-blue-100 text-blue-900 border-2 border-blue-400'
+                      : 'bg-gray-50 text-gray-900 hover:bg-gray-200'
+                    }
+                  `}
+                >
+                  {date.getDate()}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Selected Date Display */}
+          {selectedDate && (
+            <div className="bg-purple-50 border border-purple-200 rounded-md p-3">
+              <p className="text-sm text-purple-900">
+                Selected: <span className="font-semibold">{format(selectedDate, 'dd/MM/yyyy')}</span>
+              </p>
+            </div>
+          )}
+
+          {/* Error Message */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-md p-3">
+              <p className="text-sm text-red-900">{error}</p>
+            </div>
+          )}
+
+          {/* Buttons */}
+          <div className="flex gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition"
+              disabled={submitting}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition disabled:opacity-50"
+              disabled={submitting || !selectedDate}
+            >
+              {submitting ? 'Adding...' : 'Add Date'}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

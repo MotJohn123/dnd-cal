@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Users, Calendar, MapPin, Clock, Plus, Edit, Trash2, X } from 'lucide-react';
 import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
-import { EditCampaignModal, EditSessionModal } from '@/components/CampaignModals';
+import { EditCampaignModal, EditSessionModal, UniqueDatesModal } from '@/components/CampaignModals';
 
 interface Campaign {
   _id: string;
@@ -41,10 +41,12 @@ export default function CampaignDetailPage() {
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [availabilities, setAvailabilities] = useState<AvailabilityRecord[]>([]);
+  const [uniqueDates, setUniqueDates] = useState<Date[]>([]);
   const [loading, setLoading] = useState(true);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [showEditCampaignModal, setShowEditCampaignModal] = useState(false);
   const [showEditSessionModal, setShowEditSessionModal] = useState(false);
+  const [showUniqueDatesModal, setShowUniqueDatesModal] = useState(false);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
 
   useEffect(() => {
@@ -64,10 +66,11 @@ export default function CampaignDetailPage() {
       const today = new Date();
       const next30Days = addDays(today, 30);
       
-      const [campaignRes, sessionsRes, availRes] = await Promise.all([
+      const [campaignRes, sessionsRes, availRes, uniqueDatesRes] = await Promise.all([
         fetch(`/api/campaigns/${params.id}`),
         fetch(`/api/sessions?campaignId=${params.id}`),
         fetch(`/api/availability/campaign/${params.id}?startDate=${today.toISOString()}&endDate=${next30Days.toISOString()}`),
+        fetch(`/api/campaigns/${params.id}/unique-dates`),
       ]);
 
       if (campaignRes.ok) {
@@ -87,6 +90,11 @@ export default function CampaignDetailPage() {
         setAvailabilities(availData.availability || []);
       } else {
         console.error('Failed to fetch availability:', await availRes.text());
+      }
+
+      if (uniqueDatesRes.ok) {
+        const uniqueDatesData = await uniqueDatesRes.json();
+        setUniqueDates(uniqueDatesData.uniqueDates.map((d: string) => new Date(d)));
       }
     } catch (error) {
       console.error('Error fetching campaign details:', error);
@@ -197,6 +205,52 @@ export default function CampaignDetailPage() {
                         {day}
                       </span>
                     ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium text-gray-500">Special Dates</p>
+                    {isDM && (
+                      <button
+                        onClick={() => setShowUniqueDatesModal(true)}
+                        className="text-purple-600 hover:text-purple-700 text-xs px-2 py-1"
+                      >
+                        <Plus className="w-4 h-4 inline" /> Add
+                      </button>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    {uniqueDates.length > 0 ? (
+                      uniqueDates.map((date, idx) => (
+                        <div key={idx} className="text-sm text-gray-700 flex items-center justify-between bg-blue-50 px-2 py-1 rounded">
+                          <span>📅 {format(new Date(date), 'dd/MM/yyyy')}</span>
+                          {isDM && (
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await fetch(`/api/campaigns/${params.id}/unique-dates`, {
+                                    method: 'DELETE',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                      date: format(new Date(date), 'yyyy-MM-dd'),
+                                    }),
+                                  });
+                                  fetchCampaignDetails();
+                                } catch (error) {
+                                  console.error('Error removing unique date:', error);
+                                }
+                              }}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-500">No special dates</p>
+                    )}
                   </div>
                 </div>
 
@@ -321,6 +375,18 @@ export default function CampaignDetailPage() {
           onSuccess={() => {
             setShowEditSessionModal(false);
             setSelectedSession(null);
+            fetchCampaignDetails();
+          }}
+        />
+      )}
+
+      {/* Unique Dates Modal */}
+      {showUniqueDatesModal && (
+        <UniqueDatesModal
+          campaignId={params.id as string}
+          onClose={() => setShowUniqueDatesModal(false)}
+          onSuccess={() => {
+            setShowUniqueDatesModal(false);
             fetchCampaignDetails();
           }}
         />
