@@ -66,13 +66,13 @@ export default function CampaignDetailPage() {
   const fetchCampaignDetails = async () => {
     try {
       const today = new Date();
-      const next30Days = addDays(today, 30);
+      const next120Days = addDays(today, 120); // Fetch 4 months of availability to cover all scenarios
       
       const [campaignRes, sessionsRes, allSessionsRes, availRes, uniqueDatesRes] = await Promise.all([
         fetch(`/api/campaigns/${params.id}`),
         fetch(`/api/sessions?campaignId=${params.id}`),
         fetch(`/api/sessions`), // Fetch ALL sessions to check conflicts across campaigns
-        fetch(`/api/availability/campaign/${params.id}?startDate=${today.toISOString()}&endDate=${next30Days.toISOString()}`),
+        fetch(`/api/availability/campaign/${params.id}?startDate=${today.toISOString()}&endDate=${next120Days.toISOString()}`),
         fetch(`/api/campaigns/${params.id}/unique-dates`),
       ]);
 
