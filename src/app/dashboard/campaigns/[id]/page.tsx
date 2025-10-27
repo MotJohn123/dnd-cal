@@ -14,6 +14,7 @@ interface Campaign {
   dmId: { _id: string; username: string };
   playerIds: { _id: string; username: string; email: string }[];
   availableDays: string[];
+  uniqueDates?: Date[];
   description?: string;
 }
 
@@ -333,6 +334,7 @@ export default function CampaignDetailPage() {
                 campaign={campaign}
                 availabilities={availabilities}
                 sessions={sessions}
+                uniqueDates={uniqueDates}
               />
             </div>
           </div>
@@ -400,10 +402,12 @@ function AvailabilityGrid({
   campaign,
   availabilities,
   sessions,
+  uniqueDates,
 }: {
   campaign: Campaign;
   availabilities: AvailabilityRecord[];
   sessions: Session[];
+  uniqueDates: Date[];
 }) {
   const [daysToShow, setDaysToShow] = useState(60); // Start with 60 days
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -415,7 +419,13 @@ function AvailabilityGrid({
     end: addDays(today, daysToShow),
   }).filter((date) => {
     const dayName = format(date, 'EEEE');
-    return campaign.availableDays.includes(dayName);
+    const dateString = format(date, 'yyyy-MM-dd');
+    
+    // Include if it's a regular campaign day OR a unique date
+    const isRegularDay = campaign.availableDays.includes(dayName);
+    const isUniqueDate = uniqueDates.some(d => format(d, 'yyyy-MM-dd') === dateString);
+    
+    return isRegularDay || isUniqueDate;
   });
 
   console.log('AvailabilityGrid - Total availabilities:', availabilities.length);
