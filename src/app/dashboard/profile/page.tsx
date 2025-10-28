@@ -181,7 +181,7 @@ export default function ProfilePage() {
             {/* Password Section */}
             <div className="border-t pt-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Change Password</h3>
-              <p className="text-sm text-gray-600 mb-4">Leave blank if you don't want to change your password</p>
+              <p className="text-sm text-gray-600 mb-4">Leave blank if you don&apos;t want to change your password</p>
               
               <div className="space-y-4">
                 {/* Current Password */}
