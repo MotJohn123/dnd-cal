@@ -10,7 +10,7 @@ import Availability from '@/models/Availability';
 // PUT /api/admin/users/[id] - Update user (admin only)
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -19,6 +19,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const params = await context.params;
     const { username, email } = await req.json();
 
     if (!username || !email) {
@@ -85,7 +86,7 @@ export async function PUT(
 // DELETE /api/admin/users/[id] - Delete user and all related data (admin only)
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -93,6 +94,8 @@ export async function DELETE(
     if (!session?.user || (session.user as any).role !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const params = await context.params;
 
     await dbConnect();
 
