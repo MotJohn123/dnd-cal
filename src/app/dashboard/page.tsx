@@ -303,8 +303,24 @@ export default function DashboardPage() {
                           <span>🕐 {sessionObj.time}</span>
                           <span>📍 {sessionObj.location}</span>
                         </div>
-                        <div className="mt-2 text-sm text-gray-600">
-                          {sessionObj.confirmedPlayerIds.length} player(s) confirmed
+                        <div className="mt-2">
+                          <p className="text-sm font-medium text-gray-700 mb-1">
+                            Confirmed Players ({sessionObj.confirmedPlayerIds.length}):
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {sessionObj.confirmedPlayerIds.length === 0 ? (
+                              <span className="text-sm text-gray-500 italic">No confirmations yet</span>
+                            ) : (
+                              sessionObj.confirmedPlayerIds.map((player) => (
+                                <span
+                                  key={player._id}
+                                  className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full"
+                                >
+                                  {player.username}
+                                </span>
+                              ))
+                            )}
+                          </div>
                         </div>
                       </div>
 

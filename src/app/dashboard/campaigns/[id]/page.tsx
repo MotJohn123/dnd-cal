@@ -301,9 +301,25 @@ export default function CampaignDetailPage() {
                           </p>
                           <p className="text-sm text-gray-600">{session.time}</p>
                           <p className="text-sm text-gray-600">{session.location}</p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {session.confirmedPlayerIds.length} players confirmed
-                          </p>
+                          <div className="mt-2">
+                            <p className="text-xs font-medium text-gray-700 mb-1">
+                              Confirmed ({session.confirmedPlayerIds.length}):
+                            </p>
+                            <div className="flex flex-wrap gap-1">
+                              {session.confirmedPlayerIds.length === 0 ? (
+                                <span className="text-xs text-gray-500 italic">No confirmations yet</span>
+                              ) : (
+                                session.confirmedPlayerIds.map((player) => (
+                                  <span
+                                    key={player._id}
+                                    className="inline-flex items-center px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded-full"
+                                  >
+                                    {player.username}
+                                  </span>
+                                ))
+                              )}
+                            </div>
+                          </div>
                         </div>
                         {isDM && (
                           <div className="flex gap-2">
