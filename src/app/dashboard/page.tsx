@@ -4,7 +4,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Calendar, Users, LogOut, Check, X } from 'lucide-react';
+import { Calendar, Users, LogOut, Check, X, User, Shield } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, getDay, isBefore, isToday, startOfDay } from 'date-fns';
 
@@ -130,13 +130,31 @@ export default function DashboardPage() {
             <h1 className="text-2xl font-bold text-gray-900">DnD Calendar</h1>
             <p className="text-sm text-gray-600">Welcome, {session.user.name}!</p>
           </div>
-          <button
-            onClick={() => signOut({ callbackUrl: '/' })}
-            className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 border border-gray-300 rounded-md hover:bg-gray-50 transition"
-          >
-            <LogOut className="w-4 h-4" />
-            Logout
-          </button>
+          <div className="flex items-center gap-3">
+            {(session.user as any)?.role === 'admin' && (
+              <Link
+                href="/admin"
+                className="flex items-center gap-2 px-4 py-2 text-purple-700 hover:text-purple-900 border border-purple-300 rounded-md hover:bg-purple-50 transition"
+              >
+                <Shield className="w-4 h-4" />
+                Admin
+              </Link>
+            )}
+            <Link
+              href="/dashboard/profile"
+              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 border border-gray-300 rounded-md hover:bg-gray-50 transition"
+            >
+              <User className="w-4 h-4" />
+              Profile
+            </Link>
+            <button
+              onClick={() => signOut({ callbackUrl: '/' })}
+              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 border border-gray-300 rounded-md hover:bg-gray-50 transition"
+            >
+              <LogOut className="w-4 h-4" />
+              Logout
+            </button>
+          </div>
         </div>
       </header>
 
