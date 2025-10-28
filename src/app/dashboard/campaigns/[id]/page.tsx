@@ -20,7 +20,7 @@ interface Campaign {
 
 interface Session {
   _id: string;
-  campaignId: string | { _id: string; name: string };
+  campaignId: string | { _id: string; name: string; dmId: string };
   name?: string;
   date: string;
   time: string;
@@ -341,7 +341,8 @@ export default function CampaignDetailPage() {
               <AvailabilityGrid
                 campaign={campaign}
                 availabilities={availabilities}
-                sessions={allSessions}
+                sessions={sessions}
+                allSessions={allSessions}
                 uniqueDates={uniqueDates}
               />
             </div>
@@ -410,11 +411,13 @@ function AvailabilityGrid({
   campaign,
   availabilities,
   sessions,
+  allSessions,
   uniqueDates,
 }: {
   campaign: Campaign;
   availabilities: AvailabilityRecord[];
   sessions: Session[];
+  allSessions: Session[];
   uniqueDates: Date[];
 }) {
   const [daysToShow, setDaysToShow] = useState(60); // Start with 60 days
@@ -442,11 +445,28 @@ function AvailabilityGrid({
   };
   
   const getSessionForPlayerOnDate = (userId: string, date: Date) => {
-    return sessions.find((s) => {
+    // Check ALL sessions across ALL campaigns for conflicts
+    return allSessions.find((s) => {
+      // Check if date matches
+      if (!isSameDay(parseISO(s.date), date)) {
+        return false;
+      }
+      
+      // Check if user is a confirmed player
       const confirmedIds = s.confirmedPlayerIds.map((p: any) => 
         typeof p === 'object' ? p._id : p
       );
-      return confirmedIds.includes(userId) && isSameDay(parseISO(s.date), date);
+      if (confirmedIds.includes(userId)) {
+        return true;
+      }
+      
+      // Check if user is the DM of this campaign's session
+      const campaign = typeof s.campaignId === 'object' ? s.campaignId : null;
+      if (campaign && campaign.dmId === userId) {
+        return true;
+      }
+      
+      return false;
     });
   };
   
