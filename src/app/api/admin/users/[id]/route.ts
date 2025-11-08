@@ -6,6 +6,7 @@ import User from '@/models/User';
 import Campaign from '@/models/Campaign';
 import Session from '@/models/Session';
 import Availability from '@/models/Availability';
+import bcrypt from 'bcryptjs';
 
 // PUT /api/admin/users/[id] - Update user (admin only)
 export async function PUT(
@@ -20,20 +21,40 @@ export async function PUT(
     }
 
     const params = await context.params;
-    const { username, email } = await req.json();
-
-    if (!username || !email) {
-      return NextResponse.json(
-        { error: 'Username and email are required' },
-        { status: 400 }
-      );
-    }
+    const body = await req.json();
+    const { username, email, password } = body;
 
     await dbConnect();
 
     const user = await User.findById(params.id);
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // If only password is being changed
+    if (password && !username && !email) {
+      if (password.length < 6) {
+        return NextResponse.json(
+          { error: 'Password must be at least 6 characters' },
+          { status: 400 }
+        );
+      }
+      const hashedPassword = await bcrypt.hash(password, 10);
+      user.password = hashedPassword;
+      await user.save();
+
+      return NextResponse.json(
+        { message: 'Password updated successfully' },
+        { status: 200 }
+      );
+    }
+
+    // Otherwise update username and email
+    if (!username || !email) {
+      return NextResponse.json(
+        { error: 'Username and email are required' },
+        { status: 400 }
+      );
     }
 
     // Check if username is taken by another user

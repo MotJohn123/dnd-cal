@@ -162,6 +162,7 @@ function CreateCampaignModal({
   onClose: () => void;
   onSuccess: () => void;
 }) {
+  const { data: session } = useSession();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [availableDays, setAvailableDays] = useState<string[]>([]);
@@ -181,7 +182,12 @@ function CreateCampaignModal({
       const response = await fetch('/api/users');
       const data = await response.json();
       if (response.ok) {
-        setUsers(data.users);
+        // Filter out the current user (DM) from the list
+        const filteredUsers = data.users.filter(
+          (user: { _id: string; username: string; email: string }) => 
+            user._id !== session?.user?.id
+        );
+        setUsers(filteredUsers);
       }
     } catch (error) {
       console.error('Error fetching users:', error);

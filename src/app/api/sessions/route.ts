@@ -195,11 +195,11 @@ export async function POST(req: NextRequest) {
     });
 
     // Update all players' AND DM's availability to "Not available" for this date
-    // Create a separate date for availability tracking (midnight in the user's view)
+    // IMPORTANT: Use the SAME date that was used to create the session (pragueDate already represents midnight)
+    // The pragueDate is already set to represent the correct calendar date
     const availabilityDate = new Date(pragueDate);
-    availabilityDate.setUTCHours(0, 0, 0, 0);
 
-    // Mark all players as not available for ALL their campaigns on this date
+    // Mark all players as not available for ALL their campaigns on this date ONLY
     for (const player of players) {
       await Availability.findOneAndUpdate(
         { userId: player._id, date: availabilityDate },
@@ -208,7 +208,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Also mark DM as not available for all their campaigns on this date
+    // Also mark DM as not available for all their campaigns on this date ONLY
     await Availability.findOneAndUpdate(
       { userId: campaign.dmId, date: availabilityDate },
       { status: 'Not available' },

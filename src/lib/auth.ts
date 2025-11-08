@@ -18,7 +18,7 @@ export const authOptions: NextAuthOptions = {
         }
 
         // Check for hardcoded admin credentials
-        if (credentials.email === 'admin' && credentials.password === 'admin') {
+        if (credentials.email === 'admin' && credentials.password === 'cal-master123') {
           return {
             id: 'admin',
             email: 'admin@system.local',

@@ -3,7 +3,7 @@
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Users, Sword, Edit, Trash2, X, Save } from 'lucide-react';
+import { Users, Sword, Edit, Trash2, X, Save, Key } from 'lucide-react';
 
 interface User {
   _id: string;
@@ -18,6 +18,7 @@ interface Campaign {
   emoji?: string;
   dmId: { _id: string; username: string };
   playerIds: { _id: string; username: string }[];
+  availableDays: string[];
   description?: string;
   createdAt: string;
 }
@@ -33,6 +34,22 @@ export default function AdminPage() {
   // Edit user modal state
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [editUserForm, setEditUserForm] = useState({ username: '', email: '' });
+  
+  // Change password modal state
+  const [changingPasswordUser, setChangingPasswordUser] = useState<User | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  
+  // Edit campaign modal state
+  const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
+  const [editCampaignForm, setEditCampaignForm] = useState({
+    name: '',
+    emoji: '',
+    description: '',
+    dmId: '',
+    playerIds: [] as string[],
+    availableDays: [] as string[],
+  });
+  const [allUsers, setAllUsers] = useState<User[]>([]);
   
   // Messages
   const [message, setMessage] = useState('');
@@ -53,9 +70,10 @@ export default function AdminPage() {
 
   const fetchData = async () => {
     try {
-      const [usersRes, campaignsRes] = await Promise.all([
+      const [usersRes, campaignsRes, allUsersRes] = await Promise.all([
         fetch('/api/admin/users'),
         fetch('/api/admin/campaigns'),
+        fetch('/api/users'),
       ]);
 
       if (usersRes.ok) {
@@ -66,6 +84,11 @@ export default function AdminPage() {
       if (campaignsRes.ok) {
         const data = await campaignsRes.json();
         setCampaigns(data.campaigns || []);
+      }
+
+      if (allUsersRes.ok) {
+        const data = await allUsersRes.json();
+        setAllUsers(data.users || []);
       }
     } catch (err) {
       console.error('Error fetching admin data:', err);
@@ -126,6 +149,81 @@ export default function AdminPage() {
       }
     } catch (err) {
       setError('Failed to update user');
+    }
+  };
+
+  const handleChangePassword = (user: User) => {
+    setChangingPasswordUser(user);
+    setNewPassword('');
+    setMessage('');
+    setError('');
+  };
+
+  const handleSavePassword = async () => {
+    if (!changingPasswordUser || !newPassword) {
+      setError('Please enter a new password');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/admin/users/${changingPasswordUser._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: newPassword }),
+      });
+
+      if (res.ok) {
+        setMessage('Password changed successfully');
+        setChangingPasswordUser(null);
+        setNewPassword('');
+      } else {
+        const data = await res.json();
+        setError(data.error || 'Failed to change password');
+      }
+    } catch (err) {
+      setError('Failed to change password');
+    }
+  };
+
+  const handleEditCampaign = (campaign: Campaign) => {
+    setEditingCampaign(campaign);
+    setEditCampaignForm({
+      name: campaign.name,
+      emoji: campaign.emoji || '🎲',
+      description: campaign.description || '',
+      dmId: campaign.dmId._id,
+      playerIds: campaign.playerIds.map(p => p._id),
+      availableDays: campaign.availableDays || [],
+    });
+    setMessage('');
+    setError('');
+  };
+
+  const handleSaveCampaign = async () => {
+    if (!editingCampaign) return;
+
+    try {
+      const res = await fetch(`/api/campaigns/${editingCampaign._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editCampaignForm),
+      });
+
+      if (res.ok) {
+        setMessage('Campaign updated successfully');
+        setEditingCampaign(null);
+        fetchData(); // Refresh to get updated campaign data with populated fields
+      } else {
+        const data = await res.json();
+        setError(data.error || 'Failed to update campaign');
+      }
+    } catch (err) {
+      setError('Failed to update campaign');
     }
   };
 
@@ -243,12 +341,21 @@ export default function AdminPage() {
                               <button
                                 onClick={() => handleEditUser(user)}
                                 className="text-blue-600 hover:text-blue-700 mr-3"
+                                title="Edit user"
                               >
                                 <Edit className="w-4 h-4 inline" />
                               </button>
                               <button
+                                onClick={() => handleChangePassword(user)}
+                                className="text-green-600 hover:text-green-700 mr-3"
+                                title="Change password"
+                              >
+                                <Key className="w-4 h-4 inline" />
+                              </button>
+                              <button
                                 onClick={() => handleDeleteUser(user._id)}
                                 className="text-red-600 hover:text-red-700"
+                                title="Delete user"
                               >
                                 <Trash2 className="w-4 h-4 inline" />
                               </button>
@@ -278,7 +385,7 @@ export default function AdminPage() {
                             DM: {campaign.dmId.username}
                           </p>
                           <p className="text-sm text-gray-600">
-                            Players: {campaign.playerIds.map(p => p.username).join(', ')}
+                            Players: {campaign.playerIds.map(p => p.username).join(', ') || 'None'}
                           </p>
                           {campaign.description && (
                             <p className="text-sm text-gray-700 mt-2">{campaign.description}</p>
@@ -287,12 +394,22 @@ export default function AdminPage() {
                             Created: {new Date(campaign.createdAt).toLocaleDateString()}
                           </p>
                         </div>
-                        <button
-                          onClick={() => handleDeleteCampaign(campaign._id)}
-                          className="text-red-600 hover:text-red-700 ml-4"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
+                        <div className="flex gap-2 ml-4">
+                          <button
+                            onClick={() => handleEditCampaign(campaign)}
+                            className="text-blue-600 hover:text-blue-700"
+                            title="Edit campaign"
+                          >
+                            <Edit className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteCampaign(campaign._id)}
+                            className="text-red-600 hover:text-red-700"
+                            title="Delete campaign"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))
@@ -326,7 +443,7 @@ export default function AdminPage() {
                   type="text"
                   value={editUserForm.username}
                   onChange={(e) => setEditUserForm({ ...editUserForm, username: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent text-gray-900"
                 />
               </div>
 
@@ -338,7 +455,7 @@ export default function AdminPage() {
                   type="email"
                   value={editUserForm.email}
                   onChange={(e) => setEditUserForm({ ...editUserForm, email: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent text-gray-900"
                 />
               </div>
 
@@ -352,6 +469,210 @@ export default function AdminPage() {
                 </button>
                 <button
                   onClick={() => setEditingUser(null)}
+                  className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Change Password Modal */}
+      {changingPasswordUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">Change Password</h2>
+              <button
+                onClick={() => setChangingPasswordUser(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600">
+                Changing password for: <strong>{changingPasswordUser.username}</strong>
+              </p>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  New Password
+                </label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent text-gray-900"
+                  placeholder="Enter new password (min 6 characters)"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={handleSavePassword}
+                  className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition flex items-center justify-center gap-2"
+                >
+                  <Key className="w-4 h-4" />
+                  Change Password
+                </button>
+                <button
+                  onClick={() => setChangingPasswordUser(null)}
+                  className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Campaign Modal */}
+      {editingCampaign && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6 my-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">Edit Campaign</h2>
+              <button
+                onClick={() => setEditingCampaign(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Campaign Name
+                </label>
+                <input
+                  type="text"
+                  value={editCampaignForm.name}
+                  onChange={(e) => setEditCampaignForm({ ...editCampaignForm, name: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent text-gray-900"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Emoji
+                </label>
+                <input
+                  type="text"
+                  value={editCampaignForm.emoji}
+                  onChange={(e) => setEditCampaignForm({ ...editCampaignForm, emoji: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent text-gray-900"
+                  placeholder="🎲"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Dungeon Master
+                </label>
+                <select
+                  value={editCampaignForm.dmId}
+                  onChange={(e) => setEditCampaignForm({ ...editCampaignForm, dmId: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent text-gray-900"
+                >
+                  {allUsers.map((user) => (
+                    <option key={user._id} value={user._id}>
+                      {user.username}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Players
+                </label>
+                <div className="border border-gray-300 rounded-lg p-3 max-h-48 overflow-y-auto">
+                  {allUsers.filter(u => u._id !== editCampaignForm.dmId).map((user) => (
+                    <label key={user._id} className="flex items-center gap-2 py-1 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={editCampaignForm.playerIds.includes(user._id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setEditCampaignForm({
+                              ...editCampaignForm,
+                              playerIds: [...editCampaignForm.playerIds, user._id],
+                            });
+                          } else {
+                            setEditCampaignForm({
+                              ...editCampaignForm,
+                              playerIds: editCampaignForm.playerIds.filter(id => id !== user._id),
+                            });
+                          }
+                        }}
+                        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                      />
+                      <span className="text-gray-900">{user.username}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Available Days
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => (
+                    <label key={day} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={editCampaignForm.availableDays.includes(day)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setEditCampaignForm({
+                              ...editCampaignForm,
+                              availableDays: [...editCampaignForm.availableDays, day],
+                            });
+                          } else {
+                            setEditCampaignForm({
+                              ...editCampaignForm,
+                              availableDays: editCampaignForm.availableDays.filter(d => d !== day),
+                            });
+                          }
+                        }}
+                        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                      />
+                      <span className="text-gray-900">{day}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description
+                </label>
+                <textarea
+                  value={editCampaignForm.description}
+                  onChange={(e) => setEditCampaignForm({ ...editCampaignForm, description: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent text-gray-900"
+                  rows={3}
+                  placeholder="Campaign description..."
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={handleSaveCampaign}
+                  className="flex-1 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition flex items-center justify-center gap-2"
+                >
+                  <Save className="w-4 h-4" />
+                  Save Changes
+                </button>
+                <button
+                  onClick={() => setEditingCampaign(null)}
                   className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
                 >
                   Cancel
