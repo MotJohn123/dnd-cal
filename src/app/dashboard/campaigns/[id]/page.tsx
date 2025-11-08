@@ -436,9 +436,13 @@ function AvailabilityGrid({
   allSessions: Session[];
   uniqueDates: Date[];
 }) {
+  const { data: session } = useSession();
   const [daysToShow, setDaysToShow] = useState(60); // Start with 60 days
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
+  
+  // Check if current user is the DM
+  const isDM = session?.user?.id === campaign.dmId._id;
   
   const today = new Date();
   const futureDays = eachDayOfInterval({
@@ -523,6 +527,11 @@ function AvailabilityGrid({
   };
 
   const handleDateClick = (date: Date) => {
+    // Only DM can schedule sessions
+    if (!isDM) {
+      return; // Players cannot schedule
+    }
+    
     // Don't allow scheduling if there's already a session
     const existingSession = getSessionForDate(date);
     if (existingSession) {
@@ -584,12 +593,16 @@ function AvailabilityGrid({
                       className={`px-2 py-2 text-center text-xs font-medium uppercase tracking-wider transition ${
                         isLocked
                           ? 'bg-purple-200 cursor-not-allowed'
-                          : 'text-gray-500 cursor-pointer hover:bg-purple-50'
+                          : isDM
+                          ? 'text-gray-500 cursor-pointer hover:bg-purple-50'
+                          : 'text-gray-500 cursor-default'
                       }`}
                       title={
                         isLocked
                           ? `Session scheduled at ${session.time}\nLocation: ${session.location}`
-                          : `Click to schedule session\n${stats.available} available, ${stats.maybe} maybe, ${stats.notAvailable} not available`
+                          : isDM
+                          ? `Click to schedule session\n${stats.available} available, ${stats.maybe} maybe, ${stats.notAvailable} not available`
+                          : `${stats.available} available, ${stats.maybe} maybe, ${stats.notAvailable} not available`
                       }
                     >
                       <div>{format(date, 'EEE')}</div>
@@ -625,7 +638,9 @@ function AvailabilityGrid({
                         className={`px-2 py-2 transition ${
                           isLocked
                             ? 'bg-purple-100 cursor-not-allowed'
-                            : 'cursor-pointer hover:ring-2 hover:ring-purple-400 hover:ring-inset'
+                            : isDM
+                            ? 'cursor-pointer hover:ring-2 hover:ring-purple-400 hover:ring-inset'
+                            : 'cursor-default'
                         }`}
                         onClick={() => handleDateClick(date)}
                       >
