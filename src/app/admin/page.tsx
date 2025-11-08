@@ -593,30 +593,42 @@ export default function AdminPage() {
                   Players
                 </label>
                 <div className="border border-gray-300 rounded-lg p-3 max-h-48 overflow-y-auto">
-                  {allUsers.filter(u => u._id !== editCampaignForm.dmId).map((user) => (
-                    <label key={user._id} className="flex items-center gap-2 py-1 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={editCampaignForm.playerIds.includes(user._id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setEditCampaignForm({
-                              ...editCampaignForm,
-                              playerIds: [...editCampaignForm.playerIds, user._id],
-                            });
-                          } else {
-                            setEditCampaignForm({
-                              ...editCampaignForm,
-                              playerIds: editCampaignForm.playerIds.filter(id => id !== user._id),
-                            });
-                          }
-                        }}
-                        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                      />
-                      <span className="text-gray-900">{user.username}</span>
-                    </label>
-                  ))}
+                  {allUsers.map((user) => {
+                    const isDM = user._id === editCampaignForm.dmId;
+                    const isPlayer = editCampaignForm.playerIds.includes(user._id);
+                    
+                    return (
+                      <label key={user._id} className="flex items-center gap-2 py-1 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={isPlayer}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setEditCampaignForm({
+                                ...editCampaignForm,
+                                playerIds: [...editCampaignForm.playerIds, user._id],
+                              });
+                            } else {
+                              setEditCampaignForm({
+                                ...editCampaignForm,
+                                playerIds: editCampaignForm.playerIds.filter(id => id !== user._id),
+                              });
+                            }
+                          }}
+                          className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                        />
+                        <span className="text-gray-900">
+                          {user.username}
+                          {isDM && <span className="ml-2 text-xs text-purple-600 font-semibold">(DM)</span>}
+                          {isDM && isPlayer && <span className="ml-1 text-xs text-red-600">⚠️ Also a player</span>}
+                        </span>
+                      </label>
+                    );
+                  })}
                 </div>
+                <p className="mt-2 text-xs text-gray-500">
+                  💡 Tip: If DM is listed as a player (old mistake), you can uncheck them here.
+                </p>
               </div>
 
               <div>
