@@ -102,6 +102,59 @@ export async function PATCH(
   }
 }
 
+// PUT /api/campaigns/[id] - Update a campaign (admin only)
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check if user is admin
+    if ((session.user as any).role !== 'admin') {
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+    }
+
+    await dbConnect();
+
+    const campaign = await Campaign.findById(id);
+
+    if (!campaign) {
+      return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
+    }
+
+    const updates = await req.json();
+    
+    // Update all allowed fields for admin
+    if (updates.name !== undefined) campaign.name = updates.name;
+    if (updates.description !== undefined) campaign.description = updates.description;
+    if (updates.playerIds !== undefined) campaign.playerIds = updates.playerIds;
+    if (updates.availableDays !== undefined) campaign.availableDays = updates.availableDays;
+    if (updates.emoji !== undefined) campaign.emoji = updates.emoji;
+    if (updates.dmId !== undefined) campaign.dmId = updates.dmId;
+
+    await campaign.save();
+    await campaign.populate('dmId', 'username email');
+    await campaign.populate('playerIds', 'username email');
+
+    return NextResponse.json(
+      { message: 'Campaign updated successfully', campaign },
+      { status: 200 }
+    );
+  } catch (error: any) {
+    console.error('Admin update campaign error:', error);
+    return NextResponse.json(
+      { error: error.message || 'Failed to update campaign' },
+      { status: 500 }
+    );
+  }
+}
+
 // DELETE /api/campaigns/[id] - Delete a campaign
 export async function DELETE(
   req: NextRequest,
