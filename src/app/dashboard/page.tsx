@@ -109,6 +109,16 @@ export default function DashboardPage() {
     return sessions.filter((s) => isSameDay(parseISO(s.date), day));
   };
 
+  // Filter sessions to show only upcoming (today and future)
+  const upcomingSessions = sessions.filter((s) => {
+    const sessionDate = startOfDay(parseISO(s.date));
+    const today = startOfDay(new Date());
+    return sessionDate >= today;
+  }).sort((a, b) => {
+    // Sort by date ascending (earliest first)
+    return parseISO(a.date).getTime() - parseISO(b.date).getTime();
+  });
+
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -278,11 +288,11 @@ export default function DashboardPage() {
           
           {loading ? (
             <div className="text-gray-600">Loading sessions...</div>
-          ) : sessions.length === 0 ? (
+          ) : upcomingSessions.length === 0 ? (
             <div className="text-gray-600">No upcoming sessions scheduled</div>
           ) : (
             <div className="space-y-4">
-              {sessions.map((sessionObj) => {
+              {upcomingSessions.map((sessionObj) => {
                 const isConfirmed = isPlayerConfirmed(sessionObj);
                 
                 return (
