@@ -281,14 +281,29 @@ export default function CampaignDetailPage() {
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Upcoming Sessions</h2>
               {sessions.filter(s => {
                 const cId = typeof s.campaignId === 'object' ? s.campaignId._id : s.campaignId;
-                return cId === campaign._id;
+                if (cId !== campaign._id) return false;
+                // Only show upcoming sessions (today and future)
+                const sessionDate = new Date(s.date);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                sessionDate.setHours(0, 0, 0, 0);
+                return sessionDate >= today;
               }).length === 0 ? (
-                <p className="text-gray-600 text-sm">No sessions scheduled yet</p>
+                <p className="text-gray-600 text-sm">No upcoming sessions scheduled</p>
               ) : (
                 <div className="space-y-3">
                   {sessions.filter(s => {
                     const cId = typeof s.campaignId === 'object' ? s.campaignId._id : s.campaignId;
-                    return cId === campaign._id;
+                    if (cId !== campaign._id) return false;
+                    // Only show upcoming sessions (today and future)
+                    const sessionDate = new Date(s.date);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    sessionDate.setHours(0, 0, 0, 0);
+                    return sessionDate >= today;
+                  }).sort((a, b) => {
+                    // Sort by date ascending (earliest first)
+                    return new Date(a.date).getTime() - new Date(b.date).getTime();
                   }).map((session) => (
                     <div key={session._id} className="border-l-4 border-purple-600 pl-3 pb-3">
                       <div className="flex items-start justify-between">

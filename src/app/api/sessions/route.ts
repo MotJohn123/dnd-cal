@@ -256,7 +256,7 @@ export async function POST(req: NextRequest) {
           to: player.email,
           playerName: player.username,
           campaignName: campaign.name,
-          date: availabilityDate,
+          date: pragueDate,
           time,
           location,
         });
