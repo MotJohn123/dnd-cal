@@ -5,6 +5,43 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import bcrypt from 'bcryptjs';
 
+// GET /api/users/profile - Get current user's profile
+export async function GET() {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    await dbConnect();
+
+    const user = await User.findById(session.user.id);
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(
+      {
+        user: {
+          id: user._id,
+          username: user.username,
+          email: user.email,
+          emailNotifications: user.emailNotifications ?? true,
+          googleCalendarInvites: user.googleCalendarInvites ?? true,
+        },
+      },
+      { status: 200 }
+    );
+  } catch (error: any) {
+    console.error('Get profile error:', error);
+    return NextResponse.json(
+      { error: error.message || 'Failed to fetch profile' },
+      { status: 500 }
+    );
+  }
+}
+
 // PUT /api/users/profile - Update current user's profile
 export async function PUT(req: NextRequest) {
   try {
@@ -14,7 +51,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { username, email, currentPassword, newPassword } = await req.json();
+    const { username, email, currentPassword, newPassword, emailNotifications, googleCalendarInvites } = await req.json();
 
     // Validate required fields
     if (!username || !email) {
@@ -74,6 +111,14 @@ export async function PUT(req: NextRequest) {
     user.username = username;
     user.email = email;
 
+    // Update notification preferences
+    if (typeof emailNotifications === 'boolean') {
+      user.emailNotifications = emailNotifications;
+    }
+    if (typeof googleCalendarInvites === 'boolean') {
+      user.googleCalendarInvites = googleCalendarInvites;
+    }
+
     // Handle password change if requested
     if (newPassword) {
       if (!currentPassword) {
@@ -114,6 +159,8 @@ export async function PUT(req: NextRequest) {
           id: user._id,
           username: user.username,
           email: user.email,
+          emailNotifications: user.emailNotifications,
+          googleCalendarInvites: user.googleCalendarInvites,
         },
       },
       { status: 200 }

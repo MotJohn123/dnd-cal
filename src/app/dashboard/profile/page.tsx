@@ -4,7 +4,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, User, Mail, Lock, Save } from 'lucide-react';
+import { ArrowLeft, User, Mail, Lock, Save, Bell, Calendar } from 'lucide-react';
 
 export default function ProfilePage() {
   const { data: session, status, update } = useSession();
@@ -19,7 +19,10 @@ export default function ProfilePage() {
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
+    emailNotifications: true,
+    googleCalendarInvites: true,
   });
+  const [preferencesLoaded, setPreferencesLoaded] = useState(false);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -34,11 +37,33 @@ export default function ProfilePage() {
         username: session.user.username || '',
         email: session.user.email || '',
       }));
+      // Fetch notification preferences from the server
+      if (!preferencesLoaded) {
+        fetchPreferences();
+      }
     }
-  }, [session]);
+  }, [session, preferencesLoaded]);
+
+  const fetchPreferences = async () => {
+    try {
+      const response = await fetch('/api/users/profile');
+      if (response.ok) {
+        const data = await response.json();
+        setFormData(prev => ({
+          ...prev,
+          emailNotifications: data.user.emailNotifications ?? true,
+          googleCalendarInvites: data.user.googleCalendarInvites ?? true,
+        }));
+        setPreferencesLoaded(true);
+      }
+    } catch (err) {
+      console.error('Failed to fetch preferences:', err);
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value, type, checked } = e.target;
+    setFormData({ ...formData, [name]: type === 'checkbox' ? checked : value });
     setMessage('');
     setError('');
   };
@@ -77,6 +102,8 @@ export default function ProfilePage() {
           email: formData.email,
           currentPassword: formData.currentPassword || undefined,
           newPassword: formData.newPassword || undefined,
+          emailNotifications: formData.emailNotifications,
+          googleCalendarInvites: formData.googleCalendarInvites,
         }),
       });
 
@@ -176,6 +203,70 @@ export default function ProfilePage() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
                 placeholder="your@email.com"
               />
+            </div>
+
+            {/* Notification Preferences Section */}
+            <div className="border-t pt-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Notification Preferences</h3>
+              <p className="text-sm text-gray-600 mb-4">Control how you receive session notifications</p>
+              
+              <div className="space-y-4">
+                {/* Email Notifications Toggle */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Bell className="w-4 h-4 mr-2 text-gray-700" />
+                    <div>
+                      <label htmlFor="emailNotifications" className="text-sm font-medium text-gray-700">
+                        Email Notifications
+                      </label>
+                      <p className="text-xs text-gray-500">Receive email notifications for session invites, updates, and cancellations</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={formData.emailNotifications}
+                    onClick={() => setFormData({ ...formData, emailNotifications: !formData.emailNotifications })}
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2 ${
+                      formData.emailNotifications ? 'bg-purple-600' : 'bg-gray-200'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                        formData.emailNotifications ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* Google Calendar Invites Toggle */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Calendar className="w-4 h-4 mr-2 text-gray-700" />
+                    <div>
+                      <label htmlFor="googleCalendarInvites" className="text-sm font-medium text-gray-700">
+                        Google Calendar Invites
+                      </label>
+                      <p className="text-xs text-gray-500">Receive Google Calendar invites for scheduled sessions</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={formData.googleCalendarInvites}
+                    onClick={() => setFormData({ ...formData, googleCalendarInvites: !formData.googleCalendarInvites })}
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2 ${
+                      formData.googleCalendarInvites ? 'bg-purple-600' : 'bg-gray-200'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                        formData.googleCalendarInvites ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Password Section */}

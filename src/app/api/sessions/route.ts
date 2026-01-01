@@ -222,44 +222,60 @@ export async function POST(req: NextRequest) {
         throw new Error('DM not found');
       }
 
-      // Include both DM and players in the calendar event
-      const allAttendees = [
-        dm.email, // DM gets calendar invite
-        ...players.map((p) => p.email), // Players get calendar invites
-      ];
-
-      // Format event title: [Campaign Name]:[Session Name] or just [Campaign Name]
-      const eventTitle = name ? `${campaign.name}: ${name}` : campaign.name;
+      // Include only users who have Google Calendar invites enabled
+      const allAttendees: string[] = [];
       
-      const eventId = await createGoogleCalendarEvent({
-        summary: eventTitle,
-        description: `Campaign: ${campaign.name}\nLocation: ${location}`,
-        location,
-        date: pragueDate,
-        time,
-        attendees: allAttendees,
-      });
+      // Add DM if they have calendar invites enabled
+      if (dm.googleCalendarInvites !== false) {
+        allAttendees.push(dm.email);
+      }
+      
+      // Add players who have calendar invites enabled
+      for (const player of players) {
+        const playerUser = await User.findById(player._id);
+        if (playerUser && playerUser.googleCalendarInvites !== false) {
+          allAttendees.push(player.email);
+        }
+      }
 
-      if (eventId) {
-        newSession.googleEventId = eventId;
-        await newSession.save();
+      // Only create calendar event if there are attendees
+      if (allAttendees.length > 0) {
+        // Format event title: [Campaign Name]:[Session Name] or just [Campaign Name]
+        const eventTitle = name ? `${campaign.name}: ${name}` : campaign.name;
+        
+        const eventId = await createGoogleCalendarEvent({
+          summary: eventTitle,
+          description: `Campaign: ${campaign.name}\nLocation: ${location}`,
+          location,
+          date: pragueDate,
+          time,
+          attendees: allAttendees,
+        });
+
+        if (eventId) {
+          newSession.googleEventId = eventId;
+          await newSession.save();
+        }
       }
     } catch (googleError) {
       console.error('Google Calendar error:', googleError);
       // Continue even if Google Calendar fails
     }
 
-    // Send email invitations
+    // Send email invitations to users who have email notifications enabled
     try {
       for (const player of players) {
-        await sendSessionInvite({
-          to: player.email,
-          playerName: player.username,
-          campaignName: campaign.name,
-          date: pragueDate,
-          time,
-          location,
-        });
+        const playerUser = await User.findById(player._id);
+        if (playerUser && playerUser.emailNotifications !== false) {
+          await sendSessionInvite({
+            to: player.email,
+            playerName: player.username,
+            campaignName: campaign.name,
+            date: pragueDate,
+            time,
+            location,
+          });
+        }
       }
     } catch (emailError) {
       console.error('Email error:', emailError);

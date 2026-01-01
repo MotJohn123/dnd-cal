@@ -143,40 +143,55 @@ export async function PUT(
           throw new Error('DM not found');
         }
 
-        // Include both DM and players in the calendar event
-        const allAttendees = [
-          dm.email, // DM gets calendar update
-          ...players.map((p) => p.email), // Players get calendar updates
-        ];
+        // Include only users who have Google Calendar invites enabled
+        const allAttendees: string[] = [];
+        
+        // Add DM if they have calendar invites enabled
+        if (dm.googleCalendarInvites !== false) {
+          allAttendees.push(dm.email);
+        }
+        
+        // Add players who have calendar invites enabled
+        for (const player of players) {
+          const playerUser = await User.findById(player._id);
+          if (playerUser && playerUser.googleCalendarInvites !== false) {
+            allAttendees.push(player.email);
+          }
+        }
 
-        await updateGoogleCalendarEvent(sessionDoc.googleEventId, {
-          summary: eventTitle,
-          description: `TTRPG Session for ${campaign.name}`,
-          location: sessionDoc.location,
-          date: sessionDoc.date,
-          time: sessionDoc.time,
-          attendees: allAttendees,
-        });
+        if (allAttendees.length > 0) {
+          await updateGoogleCalendarEvent(sessionDoc.googleEventId, {
+            summary: eventTitle,
+            description: `TTRPG Session for ${campaign.name}`,
+            location: sessionDoc.location,
+            date: sessionDoc.date,
+            time: sessionDoc.time,
+            attendees: allAttendees,
+          });
+        }
       } catch (calendarError) {
         console.error('Failed to update Google Calendar event:', calendarError);
       }
     }
 
-    // Send update emails to players
+    // Send update emails to players who have email notifications enabled
     type PopulatedPlayer = { _id: any; username: string; email: string };
     const players = campaign.playerIds as unknown as PopulatedPlayer[];
 
     try {
       for (const player of players) {
-        await sendSessionUpdate({
-          to: player.email,
-          playerName: player.username,
-          campaignName: campaign.name,
-          sessionName: sessionDoc.name,
-          date: sessionDoc.date,
-          time: sessionDoc.time,
-          location: sessionDoc.location,
-        });
+        const playerUser = await User.findById(player._id);
+        if (playerUser && playerUser.emailNotifications !== false) {
+          await sendSessionUpdate({
+            to: player.email,
+            playerName: player.username,
+            campaignName: campaign.name,
+            sessionName: sessionDoc.name,
+            date: sessionDoc.date,
+            time: sessionDoc.time,
+            location: sessionDoc.location,
+          });
+        }
       }
     } catch (emailError) {
       console.error('Email error:', emailError);
@@ -252,20 +267,23 @@ export async function DELETE(
       status: 'Not available',
     });
 
-    // Send cancellation emails
+    // Send cancellation emails to users who have email notifications enabled
     type PopulatedPlayer = { _id: any; username: string; email: string };
     const players = campaign.playerIds as unknown as PopulatedPlayer[];
 
     try {
       for (const player of players) {
-        await sendSessionCancellation({
-          to: player.email,
-          playerName: player.username,
-          campaignName: campaign.name,
-          sessionName: sessionDoc.name,
-          date: sessionDoc.date,
-          time: sessionDoc.time,
-        });
+        const playerUser = await User.findById(player._id);
+        if (playerUser && playerUser.emailNotifications !== false) {
+          await sendSessionCancellation({
+            to: player.email,
+            playerName: player.username,
+            campaignName: campaign.name,
+            sessionName: sessionDoc.name,
+            date: sessionDoc.date,
+            time: sessionDoc.time,
+          });
+        }
       }
     } catch (emailError) {
       console.error('Email error:', emailError);
