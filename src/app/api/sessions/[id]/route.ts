@@ -8,6 +8,7 @@ import Availability from '@/models/Availability';
 import { sendSessionUpdate, sendSessionCancellation } from '@/lib/email';
 import { deleteGoogleCalendarEvent, updateGoogleCalendarEvent } from '@/lib/google-calendar';
 import User from '@/models/User';
+import { parseDateInPrague } from '@/lib/timezone';
 
 // GET /api/sessions/[id] - Get a specific session
 export async function GET(
@@ -84,42 +85,13 @@ export async function PUT(
     if (date) {
       // Parse date as Prague local time (not UTC)
       if (typeof date === 'string') {
-        const parts = date.split('-');
-        if (parts.length === 3) {
-          const [year, month, day] = parts.map(Number);
-          
-          // Calculate the UTC datetime that represents this date at midnight in Prague timezone
-          const utcMidnight = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
-          
-          // Format it in Prague timezone to see what date/time it shows
-          const formatter = new Intl.DateTimeFormat('en-US', {
-            timeZone: 'Europe/Prague',
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: false,
-          });
-          
-          const pragueTimeStr = formatter.format(utcMidnight);
-          const [datePart, timePart] = pragueTimeStr.split(', ');
-          const [pragueMonth, pragueDay, pragueYear] = datePart.split('/').map(Number);
-          const [pragueHour, pragueMin, pragueSec] = timePart.split(':').map(Number);
-          
-          const daysOff = day - pragueDay;
-          const hoursOff = 0 - pragueHour;
-          const minutesOff = 0 - pragueMin;
-          
-          const pragueDate = new Date(utcMidnight);
-          pragueDate.setUTCDate(pragueDate.getUTCDate() + daysOff);
-          pragueDate.setUTCHours(pragueDate.getUTCHours() + hoursOff);
-          pragueDate.setUTCMinutes(pragueDate.getUTCMinutes() + minutesOff);
-          
+        try {
+          const pragueDate = parseDateInPrague(date);
           if (!isNaN(pragueDate.getTime())) {
             sessionDoc.date = pragueDate;
           }
+        } catch (error) {
+          // Invalid date format, skip update
         }
       }
     }

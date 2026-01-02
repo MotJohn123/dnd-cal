@@ -1,5 +1,7 @@
 import nodemailer from 'nodemailer';
-import { format } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
+
+const APP_TIMEZONE = 'Europe/Prague';
 
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
@@ -42,7 +44,7 @@ interface SessionCancellationParams {
 export async function sendSessionInvite(params: SessionInviteParams) {
   const { to, playerName, campaignName, date, time, location } = params;
 
-  const formattedDate = format(date, 'EEEE, MMMM d, yyyy');
+  const formattedDate = formatInTimeZone(date, APP_TIMEZONE, 'EEEE, MMMM d, yyyy');
 
   const mailOptions = {
     from: process.env.EMAIL_FROM,
@@ -87,7 +89,7 @@ export async function sendSessionInvite(params: SessionInviteParams) {
 export async function sendSessionUpdate(params: SessionUpdateParams) {
   const { to, playerName, campaignName, sessionName, date, time, location } = params;
 
-  const formattedDate = format(date, 'EEEE, MMMM d, yyyy');
+  const formattedDate = formatInTimeZone(date, APP_TIMEZONE, 'EEEE, MMMM d, yyyy');
   const title = sessionName || campaignName;
 
   const mailOptions = {
@@ -133,7 +135,7 @@ export async function sendSessionUpdate(params: SessionUpdateParams) {
 export async function sendSessionCancellation(params: SessionCancellationParams) {
   const { to, playerName, campaignName, sessionName, date, time } = params;
 
-  const formattedDate = format(date, 'EEEE, MMMM d, yyyy');
+  const formattedDate = formatInTimeZone(date, APP_TIMEZONE, 'EEEE, MMMM d, yyyy');
   const title = sessionName || campaignName;
 
   const mailOptions = {

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import Campaign from '@/models/Campaign';
+import { parseDateInPrague } from '@/lib/timezone';
 
 // GET /api/campaigns/[id]/unique-dates - Get unique dates for a campaign
 export async function GET(
@@ -73,24 +74,8 @@ export async function POST(
       );
     }
 
-    // Parse the date and ensure it's at midnight UTC (Prague midnight)
-    const [year, month, day] = date.split('-').map(Number);
-    const utcMidnight = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
-
-    // Format it in Prague timezone to see what date/time it shows
-    const formatter = new Intl.DateTimeFormat('en-US', {
-      timeZone: 'Europe/Prague',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    });
-
-    const pragueStr = formatter.format(utcMidnight);
-    const [pragueMonth, pragueDay, pragueYear] = pragueStr.split('/').map(Number);
-
-    const daysOff = day - pragueDay;
-    const pragueDate = new Date(utcMidnight);
-    pragueDate.setUTCDate(pragueDate.getUTCDate() + daysOff);
+    // Parse the date and ensure it's at midnight in Prague timezone
+    const pragueDate = parseDateInPrague(date);
 
     // Check if date already exists
     const dateExists = campaign.uniqueDates.some((d: Date) => {
@@ -163,23 +148,7 @@ export async function DELETE(
     }
 
     // Parse the date to match
-    const [year, month, day] = date.split('-').map(Number);
-    const utcMidnight = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
-
-    // Format it in Prague timezone
-    const formatter = new Intl.DateTimeFormat('en-US', {
-      timeZone: 'Europe/Prague',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    });
-
-    const pragueStr = formatter.format(utcMidnight);
-    const [pragueMonth, pragueDay, pragueYear] = pragueStr.split('/').map(Number);
-
-    const daysOff = day - pragueDay;
-    const pragueDate = new Date(utcMidnight);
-    pragueDate.setUTCDate(pragueDate.getUTCDate() + daysOff);
+    const pragueDate = parseDateInPrague(date);
 
     // Remove the date
     campaign.uniqueDates = campaign.uniqueDates.filter((d: Date) => {
