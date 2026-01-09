@@ -154,24 +154,26 @@ export default function CampaignDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
       {/* Header */}
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard/campaigns" className="text-gray-600 hover:text-gray-900">
-              <ArrowLeft className="w-6 h-6" />
-            </Link>
-            <div className="flex-1">
-              <h1 className="text-2xl font-bold text-gray-900">{campaign.name}</h1>
-              <p className="text-sm text-gray-600">
-                DM: {campaign.dmId.username} • {campaign.playerIds.length} players
-              </p>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+            <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+              <Link href="/dashboard/campaigns" className="text-gray-600 hover:text-gray-900 flex-shrink-0">
+                <ArrowLeft className="w-6 h-6" />
+              </Link>
+              <div className="min-w-0">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">{campaign.name}</h1>
+                <p className="text-sm text-gray-600">
+                  DM: {campaign.dmId.username} • {campaign.playerIds.length} players
+                </p>
+              </div>
             </div>
             {isDM && (
               <button
                 onClick={() => setShowScheduleModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition"
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition flex-shrink-0 w-full sm:w-auto"
               >
                 <Plus className="w-4 h-4" />
                 Schedule Session
@@ -364,8 +366,8 @@ export default function CampaignDetailPage() {
           </div>
 
           {/* Player Availability Grid */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg shadow p-6">
+          <div className="lg:col-span-2 min-w-0">
+            <div className="bg-white rounded-lg shadow p-4 sm:p-6 overflow-hidden">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">
                 Player Availability (Next 30 Days - Campaign Days Only)
               </h2>
@@ -567,7 +569,7 @@ function AvailabilityGrid({
     <>
       <div className="space-y-4">
         {/* Controls */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
           <div className="text-sm text-gray-600">
             Showing next {futureDays.length} campaign days
           </div>
@@ -575,15 +577,15 @@ function AvailabilityGrid({
             <button
               onClick={() => setDaysToShow(Math.max(30, daysToShow - 30))}
               disabled={daysToShow <= 30}
-              className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-3 py-1 text-xs sm:text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Show Less
+              Less
             </button>
             <button
               onClick={() => setDaysToShow(daysToShow + 30)}
-              className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50"
+              className="px-3 py-1 text-xs sm:text-sm border border-gray-300 rounded hover:bg-gray-50"
             >
-              Show More (+30 days)
+              +30 days
             </button>
           </div>
         </div>

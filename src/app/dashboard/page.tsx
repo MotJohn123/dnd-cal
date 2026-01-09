@@ -132,38 +132,40 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
       {/* Header */}
       <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">DnD Calendar</h1>
-            <p className="text-sm text-gray-600">Welcome, {session.user.name}!</p>
-          </div>
-          <div className="flex items-center gap-3">
-            {(session.user as any)?.role === 'admin' && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">DnD Calendar</h1>
+              <p className="text-sm text-gray-600">Welcome, {session.user.name}!</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              {(session.user as any)?.role === 'admin' && (
+                <Link
+                  href="/admin"
+                  className="flex items-center gap-2 px-3 sm:px-4 py-2 text-purple-700 hover:text-purple-900 border border-purple-300 rounded-md hover:bg-purple-50 transition text-sm"
+                >
+                  <Shield className="w-4 h-4" />
+                  Admin
+                </Link>
+              )}
               <Link
-                href="/admin"
-                className="flex items-center gap-2 px-4 py-2 text-purple-700 hover:text-purple-900 border border-purple-300 rounded-md hover:bg-purple-50 transition"
+                href="/dashboard/profile"
+                className="flex items-center gap-2 px-3 sm:px-4 py-2 text-gray-700 hover:text-gray-900 border border-gray-300 rounded-md hover:bg-gray-50 transition text-sm"
               >
-                <Shield className="w-4 h-4" />
-                Admin
+                <User className="w-4 h-4" />
+                Profile
               </Link>
-            )}
-            <Link
-              href="/dashboard/profile"
-              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 border border-gray-300 rounded-md hover:bg-gray-50 transition"
-            >
-              <User className="w-4 h-4" />
-              Profile
-            </Link>
-            <button
-              onClick={() => signOut({ callbackUrl: '/' })}
-              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 border border-gray-300 rounded-md hover:bg-gray-50 transition"
-            >
-              <LogOut className="w-4 h-4" />
-              Logout
-            </button>
+              <button
+                onClick={() => signOut({ callbackUrl: '/' })}
+                className="flex items-center gap-2 px-3 sm:px-4 py-2 text-gray-700 hover:text-gray-900 border border-gray-300 rounded-md hover:bg-gray-50 transition text-sm"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </button>
+            </div>
           </div>
         </div>
       </header>

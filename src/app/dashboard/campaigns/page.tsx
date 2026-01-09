@@ -58,20 +58,20 @@ export default function CampaignsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
       {/* Header */}
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <Link href="/dashboard" className="text-gray-600 hover:text-gray-900 flex-shrink-0">
                 <ArrowLeft className="w-6 h-6" />
               </Link>
-              <h1 className="text-2xl font-bold text-gray-900">My Campaigns</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">My Campaigns</h1>
             </div>
             <button
               onClick={() => setShowCreateForm(true)}
-              className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition"
+              className="flex items-center justify-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition w-full sm:w-auto"
             >
               <Plus className="w-5 h-5" />
               Create Campaign
