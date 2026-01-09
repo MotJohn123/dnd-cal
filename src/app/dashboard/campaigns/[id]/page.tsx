@@ -306,8 +306,8 @@ export default function CampaignDetailPage() {
                     return new Date(a.date).getTime() - new Date(b.date).getTime();
                   }).map((session) => (
                     <div key={session._id} className="border-l-4 border-purple-600 pl-3 pb-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                        <div className="flex-1 min-w-0">
                           <p className="font-medium text-gray-900">
                             {session.name || 'Session'}
                           </p>
@@ -337,7 +337,7 @@ export default function CampaignDetailPage() {
                           </div>
                         </div>
                         {isDM && (
-                          <div className="flex gap-2">
+                          <div className="flex gap-2 flex-shrink-0">
                             <button
                               onClick={() => {
                                 setSelectedSession(session);

@@ -300,15 +300,15 @@ export default function DashboardPage() {
                     key={sessionObj._id}
                     className="border border-gray-200 rounded-lg p-4 hover:border-purple-300 transition"
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                      <div className="flex-1 min-w-0">
                         <h3 className="text-lg font-semibold text-gray-900">
                           {sessionObj.name || sessionObj.campaignId.name}
                         </h3>
                         <p className="text-sm text-gray-600 mb-2">
                           Campaign: {sessionObj.campaignId.name}
                         </p>
-                        <div className="flex flex-wrap gap-4 text-sm text-gray-700">
+                        <div className="flex flex-wrap gap-2 sm:gap-4 text-sm text-gray-700">
                           <span>📅 {format(parseISO(sessionObj.date), 'dd/MM/yyyy')}</span>
                           <span>🕐 {sessionObj.time}</span>
                           <span>📍 {sessionObj.location}</span>
@@ -334,7 +334,7 @@ export default function DashboardPage() {
                         </div>
                       </div>
 
-                      <div className="flex gap-2 ml-4">
+                      <div className="flex gap-2 sm:ml-4 flex-shrink-0">
                         {isConfirmed ? (
                           <button
                             onClick={() => handleUnconfirm(sessionObj._id)}

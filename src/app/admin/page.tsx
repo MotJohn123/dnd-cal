@@ -376,15 +376,15 @@ export default function AdminPage() {
                 ) : (
                   campaigns.map((campaign) => (
                     <div key={campaign._id} className="border rounded-lg p-4 hover:bg-gray-50">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                        <div className="flex-1 min-w-0">
                           <h3 className="text-lg font-semibold text-gray-900">
                             {campaign.emoji} {campaign.name}
                           </h3>
                           <p className="text-sm text-gray-600 mt-1">
                             DM: {campaign.dmId.username}
                           </p>
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm text-gray-600 break-words">
                             Players: {campaign.playerIds.map(p => p.username).join(', ') || 'None'}
                           </p>
                           {campaign.description && (
@@ -394,7 +394,7 @@ export default function AdminPage() {
                             Created: {new Date(campaign.createdAt).toLocaleDateString()}
                           </p>
                         </div>
-                        <div className="flex gap-2 ml-4">
+                        <div className="flex gap-2 flex-shrink-0">
                           <button
                             onClick={() => handleEditCampaign(campaign)}
                             className="text-blue-600 hover:text-blue-700"

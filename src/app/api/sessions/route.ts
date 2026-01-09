@@ -121,13 +121,31 @@ export async function POST(req: NextRequest) {
       );
     }
     
+    // Check each player's availability for this date
+    // Only auto-confirm players who have "Sure" or "Maybe" availability
+    // Players with "Not available" or "Don't know" will NOT be auto-confirmed
+    const confirmedPlayerIds: any[] = [];
+    
+    for (const player of players) {
+      const playerAvailability = await Availability.findOne({
+        userId: player._id,
+        date: pragueDate,
+      });
+      
+      // If player has "Sure" or "Maybe" availability, auto-confirm them
+      // If no availability set or status is "Don't know" or "Not available", don't auto-confirm
+      if (playerAvailability && (playerAvailability.status === 'Sure' || playerAvailability.status === 'Maybe')) {
+        confirmedPlayerIds.push(player._id);
+      }
+    }
+    
     const newSession = await Session.create({
       campaignId,
       name,
       date: pragueDate,
       time,
       location,
-      confirmedPlayerIds: players.map((p) => p._id),
+      confirmedPlayerIds,
     });
 
     // Update all players' AND DM's availability to "Not available" for this date
