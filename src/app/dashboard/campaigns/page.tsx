@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Plus, Users, Calendar } from 'lucide-react';
 
@@ -173,11 +173,7 @@ function CreateCampaignModal({
 
   const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       const response = await fetch('/api/users');
       const data = await response.json();
@@ -192,7 +188,11 @@ function CreateCampaignModal({
     } catch (error) {
       console.error('Error fetching users:', error);
     }
-  };
+  }, [session?.user?.id]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const toggleDay = (day: string) => {
     setAvailableDays((prev) =>

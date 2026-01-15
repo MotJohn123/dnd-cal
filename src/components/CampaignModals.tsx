@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { X, UserPlus, UserMinus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format, parseISO, addMonths, subMonths, getDaysInMonth, startOfMonth, getDay } from 'date-fns';
 
@@ -57,12 +57,7 @@ export function EditCampaignModal({
     '👻', '🤖', '🎃', '💀', '👽', '🦇', '🕷️', '🧟', '🏴', '🦅'
   ];
 
-
-  useEffect(() => {
-    fetchAllUsers();
-  }, []);
-
-  const fetchAllUsers = async () => {
+  const fetchAllUsers = useCallback(async () => {
     try {
       const response = await fetch('/api/users');
       if (response.ok) {
@@ -76,7 +71,11 @@ export function EditCampaignModal({
     } finally {
       setLoading(false);
     }
-  };
+  }, [campaign.dmId._id]);
+
+  useEffect(() => {
+    fetchAllUsers();
+  }, [fetchAllUsers]);
 
   const togglePlayer = (playerId: string) => {
     setSelectedPlayers((prev) =>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { Types } from 'mongoose';
 import { authOptions } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import Availability from '@/models/Availability';
@@ -101,7 +102,7 @@ export async function POST(req: NextRequest) {
       if (status === 'Sure' || status === 'Maybe') {
         // Auto-confirm player if not already confirmed
         if (!isCurrentlyConfirmed) {
-          sessionDoc.confirmedPlayerIds.push(session.user.id);
+          sessionDoc.confirmedPlayerIds.push(new Types.ObjectId(session.user.id));
           await sessionDoc.save();
         }
       } else {
