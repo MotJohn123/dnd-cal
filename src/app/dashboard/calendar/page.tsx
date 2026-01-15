@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from 'date-fns';
@@ -47,13 +47,7 @@ export default function CalendarPage() {
     }
   }, [status, router]);
 
-  useEffect(() => {
-    if (session) {
-      fetchData();
-    }
-  }, [session, currentMonth]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const start = startOfMonth(currentMonth);
       const end = endOfMonth(currentMonth);
@@ -101,7 +95,13 @@ export default function CalendarPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentMonth, session?.user?.id]);
+
+  useEffect(() => {
+    if (session) {
+      fetchData();
+    }
+  }, [session, fetchData]);
 
   const setDayAvailability = async (date: Date, status: AvailabilityStatus) => {
     try {

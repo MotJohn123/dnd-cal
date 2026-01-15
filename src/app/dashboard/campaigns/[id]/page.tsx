@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react';
 import { useRouter, useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Users, Calendar, MapPin, Clock, Plus, Edit, Trash2, X } from 'lucide-react';
 import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
@@ -57,13 +57,7 @@ export default function CampaignDetailPage() {
     }
   }, [status, router]);
 
-  useEffect(() => {
-    if (session && params.id) {
-      fetchCampaignDetails();
-    }
-  }, [session, params.id]);
-
-  const fetchCampaignDetails = async () => {
+  const fetchCampaignDetails = useCallback(async () => {
     try {
       const today = new Date();
       const next120Days = addDays(today, 120); // Fetch 4 months of availability to cover all scenarios
@@ -110,7 +104,13 @@ export default function CampaignDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.id]);
+
+  useEffect(() => {
+    if (session && params.id) {
+      fetchCampaignDetails();
+    }
+  }, [session, params.id, fetchCampaignDetails]);
 
   const isDM = session?.user?.id === campaign?.dmId._id;
 
