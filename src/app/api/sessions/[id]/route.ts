@@ -82,12 +82,22 @@ export async function PUT(
 
     // Update session
     if (name !== undefined) sessionDoc.name = name;
+    
+    // Track if date changed to re-check availability
+    let dateChanged = false;
+    let newPragueDate: Date | null = null;
+    
     if (date) {
       // Parse date as Prague local time (not UTC)
       if (typeof date === 'string') {
         try {
           const pragueDate = parseDateInPrague(date);
           if (!isNaN(pragueDate.getTime())) {
+            // Check if date actually changed
+            if (sessionDoc.date.getTime() !== pragueDate.getTime()) {
+              dateChanged = true;
+              newPragueDate = pragueDate;
+            }
             sessionDoc.date = pragueDate;
           }
         } catch (error) {
@@ -97,6 +107,28 @@ export async function PUT(
     }
     if (time) sessionDoc.time = time;
     if (location) sessionDoc.location = location;
+
+    // If date changed, re-check availability and update confirmed players
+    type PopulatedPlayerForAvailability = { _id: any; username: string; email: string };
+    const playersForAvailability = campaign.playerIds as unknown as PopulatedPlayerForAvailability[];
+    
+    if (dateChanged && newPragueDate) {
+      const confirmedPlayerIds: any[] = [];
+      
+      for (const player of playersForAvailability) {
+        const playerAvailability = await Availability.findOne({
+          userId: player._id,
+          date: newPragueDate,
+        });
+        
+        // If player has "Sure" or "Maybe" availability, auto-confirm them
+        if (playerAvailability && (playerAvailability.status === 'Sure' || playerAvailability.status === 'Maybe')) {
+          confirmedPlayerIds.push(player._id);
+        }
+      }
+      
+      sessionDoc.confirmedPlayerIds = confirmedPlayerIds;
+    }
 
     await sessionDoc.save();
 
