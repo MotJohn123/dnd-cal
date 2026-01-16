@@ -6,6 +6,15 @@ import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
+
+// App timezone - must match server
+const APP_TIMEZONE = 'Europe/Prague';
+
+// Helper to get date string in Prague timezone from ISO date
+const getDateInPrague = (isoDate: string): string => {
+  return formatInTimeZone(new Date(isoDate), APP_TIMEZONE, 'yyyy-MM-dd');
+};
 
 type AvailabilityStatus = "Don't know" | 'Sure' | 'Maybe' | 'Not available';
 
@@ -160,8 +169,8 @@ export default function CalendarPage() {
     
     // Otherwise return the user's explicitly set availability
     const avail = availability.find((a) => {
-      // Extract just the date part from ISO string: "2025-10-28T23:00:00.000Z" -> "2025-10-28"
-      const availDateStr = a.date.split('T')[0];
+      // Convert UTC date to Prague timezone to get correct date string
+      const availDateStr = getDateInPrague(a.date);
       return availDateStr === targetDateStr;
     });
     return avail?.status || "Don't know";

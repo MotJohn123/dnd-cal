@@ -6,7 +6,16 @@ import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Users, Calendar, MapPin, Clock, Plus, Edit, Trash2, X } from 'lucide-react';
 import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 import { EditCampaignModal, EditSessionModal, UniqueDatesModal } from '@/components/CampaignModals';
+
+// App timezone - must match server
+const APP_TIMEZONE = 'Europe/Prague';
+
+// Helper to get date string in Prague timezone from ISO date
+const getDateInPrague = (isoDate: string): string => {
+  return formatInTimeZone(new Date(isoDate), APP_TIMEZONE, 'yyyy-MM-dd');
+};
 
 interface Campaign {
   _id: string;
@@ -522,8 +531,8 @@ function AvailabilityGrid({
       const availUserId = typeof a.userId === 'object' ? a.userId._id : a.userId;
       if (availUserId !== userId) return false;
       
-      // Extract just the date part from ISO string: "2025-10-28T23:00:00.000Z" -> "2025-10-28"
-      const availDateStr = a.date.split('T')[0];
+      // Convert UTC date to Prague timezone to get correct date string
+      const availDateStr = getDateInPrague(a.date);
       return availDateStr === targetDateStr;
     });
     return avail?.status || "Don't know";
