@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Users, Calendar, MapPin, Clock, Plus, Edit, Trash2, X } from 'lucide-react';
-import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
+import { format, addDays, eachDayOfInterval, parseISO } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 import { EditCampaignModal, EditSessionModal, UniqueDatesModal } from '@/components/CampaignModals';
 
@@ -244,7 +244,7 @@ export default function CampaignDetailPage() {
                     {uniqueDates.length > 0 ? (
                       uniqueDates.map((date, idx) => (
                         <div key={idx} className="text-sm text-gray-700 flex items-center justify-between bg-blue-50 px-2 py-1 rounded">
-                          <span>📅 {format(new Date(date), 'dd/MM/yyyy')}</span>
+                          <span>📅 {formatInTimeZone(new Date(date), APP_TIMEZONE, 'dd/MM/yyyy')}</span>
                           {isDM && (
                             <button
                               onClick={async () => {
@@ -253,7 +253,7 @@ export default function CampaignDetailPage() {
                                     method: 'DELETE',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({
-                                      date: format(new Date(date), 'yyyy-MM-dd'),
+                                      date: formatInTimeZone(new Date(date), APP_TIMEZONE, 'yyyy-MM-dd'),
                                     }),
                                   });
                                   fetchCampaignDetails();
@@ -323,7 +323,7 @@ export default function CampaignDetailPage() {
                             {session.name || 'Session'}
                           </p>
                           <p className="text-sm text-gray-700">
-                            {format(parseISO(session.date), 'dd/MM/yyyy')}
+                            {formatInTimeZone(parseISO(session.date), APP_TIMEZONE, 'dd/MM/yyyy')}
                           </p>
                           <p className="text-sm text-gray-600">{session.time}</p>
                           <p className="text-sm text-gray-600">{session.location}</p>
@@ -480,21 +480,21 @@ function AvailabilityGrid({
     
     // Include if it's a regular campaign day OR a unique date
     const isRegularDay = campaign.availableDays.includes(dayName);
-    const isUniqueDate = uniqueDates.some(d => format(d, 'yyyy-MM-dd') === dateString);
+    const isUniqueDate = uniqueDates.some(d => formatInTimeZone(d, APP_TIMEZONE, 'yyyy-MM-dd') === dateString);
     
     return isRegularDay || isUniqueDate;
   });
 
   // Check if there's a session on a specific date
   const getSessionForDate = (date: Date) => {
-    return sessions.find((s) => isSameDay(parseISO(s.date), date));
+    return sessions.find((s) => getDateInPrague(s.date) === format(date, 'yyyy-MM-dd'));
   };
   
   const getSessionForPlayerOnDate = (userId: string, date: Date) => {
     // Check ALL sessions across ALL campaigns for conflicts
     return allSessions.find((s) => {
-      // Check if date matches
-      if (!isSameDay(parseISO(s.date), date)) {
+      // Check if date matches (compare in Prague timezone)
+      if (getDateInPrague(s.date) !== format(date, 'yyyy-MM-dd')) {
         return false;
       }
       
@@ -881,7 +881,7 @@ function ScheduleSessionModal({
       // Check if this date is available (either in availableDays or uniqueDates)
       const isAvailable = 
         campaign.availableDays.includes(dayName) || 
-        uniqueDates.some(d => format(d, 'yyyy-MM-dd') === dateString);
+        uniqueDates.some(d => formatInTimeZone(d, APP_TIMEZONE, 'yyyy-MM-dd') === dateString);
       
       if (isAvailable) {
         dates.push(currentDate);

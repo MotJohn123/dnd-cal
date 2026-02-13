@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, addMonths, subMonths } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 
 // App timezone - must match server
@@ -79,16 +79,12 @@ export default function CalendarPage() {
           c.dmId._id !== session?.user?.id
         );
         
-        // Transform uniqueDates from ISO strings to yyyy-MM-dd format
+        // Transform uniqueDates from ISO strings to yyyy-MM-dd format in Prague timezone
         const transformedCampaigns = playerCampaigns.map((c: Campaign) => ({
           ...c,
           uniqueDates: c.uniqueDates?.map((d: string) => {
-            // If it's an ISO string like "2025-11-15T00:00:00.000Z", extract just the date
-            if (d.includes('T')) {
-              return d.split('T')[0];
-            }
-            // Otherwise it's already in yyyy-MM-dd format
-            return d;
+            // Always convert through Prague timezone to get correct date
+            return getDateInPrague(d);
           }) || []
         }));
         
@@ -154,7 +150,8 @@ export default function CalendarPage() {
   };
 
   const getSessionsForDate = (date: Date): Session[] => {
-    return sessions.filter((s) => isSameDay(new Date(s.date), date));
+    const targetDateStr = format(date, 'yyyy-MM-dd');
+    return sessions.filter((s) => getDateInPrague(s.date) === targetDateStr);
   };
 
   const getAvailabilityForDate = (date: Date): AvailabilityStatus => {

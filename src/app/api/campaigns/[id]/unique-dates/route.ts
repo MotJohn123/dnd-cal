@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import Campaign from '@/models/Campaign';
-import { parseDateInPrague } from '@/lib/timezone';
+import { parseDateInPrague, getDateStringInPrague } from '@/lib/timezone';
 
 // GET /api/campaigns/[id]/unique-dates - Get unique dates for a campaign
 export async function GET(
@@ -77,12 +77,10 @@ export async function POST(
     // Parse the date and ensure it's at midnight in Prague timezone
     const pragueDate = parseDateInPrague(date);
 
-    // Check if date already exists
+    // Check if date already exists (compare in Prague timezone)
+    const pragueDateStr = getDateStringInPrague(pragueDate);
     const dateExists = campaign.uniqueDates.some((d: Date) => {
-      const existingDate = new Date(d);
-      return existingDate.getUTCFullYear() === pragueDate.getUTCFullYear() &&
-             existingDate.getUTCMonth() === pragueDate.getUTCMonth() &&
-             existingDate.getUTCDate() === pragueDate.getUTCDate();
+      return getDateStringInPrague(new Date(d)) === pragueDateStr;
     });
 
     if (dateExists) {
@@ -150,12 +148,10 @@ export async function DELETE(
     // Parse the date to match
     const pragueDate = parseDateInPrague(date);
 
-    // Remove the date
+    // Remove the date (compare in Prague timezone)
+    const pragueDateStr = getDateStringInPrague(pragueDate);
     campaign.uniqueDates = campaign.uniqueDates.filter((d: Date) => {
-      const existingDate = new Date(d);
-      return !(existingDate.getUTCFullYear() === pragueDate.getUTCFullYear() &&
-               existingDate.getUTCMonth() === pragueDate.getUTCMonth() &&
-               existingDate.getUTCDate() === pragueDate.getUTCDate());
+      return getDateStringInPrague(new Date(d)) !== pragueDateStr;
     });
 
     await campaign.save();
