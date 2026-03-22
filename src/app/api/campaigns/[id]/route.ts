@@ -71,9 +71,10 @@ export async function PATCH(
       return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
     }
 
-    // Only DM can update campaign
-    if (campaign.dmId.toString() !== session.user.id) {
-      return NextResponse.json({ error: 'Only the DM can update this campaign' }, { status: 403 });
+    // Only DM or admin can update campaign
+    const isAdmin = (session.user as any).role === 'admin';
+    if (campaign.dmId.toString() !== session.user.id && !isAdmin) {
+      return NextResponse.json({ error: 'Only the DM or admin can update this campaign' }, { status: 403 });
     }
 
     const updates = await req.json();
@@ -176,9 +177,10 @@ export async function DELETE(
       return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
     }
 
-    // Only DM can delete campaign
-    if (campaign.dmId.toString() !== session.user.id) {
-      return NextResponse.json({ error: 'Only the DM can delete this campaign' }, { status: 403 });
+    // Only DM or admin can delete campaign
+    const isAdmin = (session.user as any).role === 'admin';
+    if (campaign.dmId.toString() !== session.user.id && !isAdmin) {
+      return NextResponse.json({ error: 'Only the DM or admin can delete this campaign' }, { status: 403 });
     }
 
     // Populate players so we can notify them
