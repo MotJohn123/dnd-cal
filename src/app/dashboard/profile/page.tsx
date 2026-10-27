@@ -34,7 +34,7 @@ export default function ProfilePage() {
     if (session?.user) {
       setFormData(prev => ({
         ...prev,
-        username: session.user.username || '',
+        username: session.user.username || session.user.name || '',
         email: session.user.email || '',
       }));
       // Fetch notification preferences from the server
@@ -51,6 +51,8 @@ export default function ProfilePage() {
         const data = await response.json();
         setFormData(prev => ({
           ...prev,
+          username: data.user.username,
+          email: data.user.email,
           emailNotifications: data.user.emailNotifications ?? true,
           googleCalendarInvites: data.user.googleCalendarInvites ?? true,
         }));
